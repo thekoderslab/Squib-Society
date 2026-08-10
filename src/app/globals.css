@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ---- palette (mirrors tailwind.config.ts) ---- */
+    --bg-cream: #f4efe6;
+    --surface: #fbf8f2;
+    --ink: #262019;
+    --squib-green: #56b947;
+    --green-deep: #3e8f33;
+    --squib-red: #d8362b;
+    --locked: #d8cfc0;
+    --hairline: #e7e0d3;
+
+    /* ---- type roles ----
+       Display + body come from Fontshare (loaded in layout.tsx).
+       Mono comes from next/font (Space Mono) as --font-space-mono. */
+    --font-display: "Clash Display", "Satoshi", ui-rounded, "Segoe UI", system-ui,
+      sans-serif;
+    --font-body: "Satoshi", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", monospace;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* sticky nav clearance for anchor jumps */
+    scroll-padding-top: 88px;
+  }
+
+  body {
+    background-color: var(--bg-cream);
+    color: var(--ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Visible, on-brand keyboard focus. Never remove the ring. */
+  :focus-visible {
+    outline: 3px solid var(--green-deep);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: var(--squib-green);
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* The one grain/paper cue that ties the UI to the studio photography. */
+  .studio-grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(38, 32, 25, 0.06) 1px,
+      transparent 0
+    );
+    background-size: 6px 6px;
+  }
+
+  .hairline {
+    border: 1px solid var(--hairline);
+  }
+}
+
+@layer utilities {
+  /* mono = "the counted, on-chain stuff". Used nowhere else. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
