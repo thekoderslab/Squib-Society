@@ -2,9 +2,16 @@
 
 import { useId, useState, type FormEvent, type ReactNode } from "react";
 
+import {
+  ApiError,
+  connectX,
+  disconnectX,
+  getMyTasks,
+  submitAllowlist,
+  verifyTask,
+} from "@/lib/api";
 import { EVM_ADDRESS_RE, POINTS, WL_WINNERS } from "@/lib/constants";
-import { connectX, getMyTasks, submitAllowlist, verifyTask } from "@/lib/mock-api";
-import type { SubmitResult, Task, TaskId } from "@/lib/types";
+import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Avatar from "../art/Avatar";
 import Button, { Spinner } from "../ui/Button";
@@ -18,6 +25,7 @@ export default function AllowlistFunnel() {
   const {
     hydrated,
     progress,
+    applyServerProgress,
     setX,
     setTask,
     setEvmAddress,
@@ -43,11 +51,19 @@ export default function AllowlistFunnel() {
     setConnecting(true);
     try {
       // INTEGRATION: X OAuth
-      const account = await connectX();
+      const { account, progress: server } = await connectX();
       setX(account);
+      // In Supabase mode the server already knows everything this account has
+      // done before — adopt that rather than the browser's copy.
+      if (server) applyServerProgress(server);
     } finally {
       setConnecting(false);
     }
+  }
+
+  async function handleDisconnect() {
+    setX(null);
+    await disconnectX();
   }
 
   function validate(value: string): string | null {
@@ -72,10 +88,25 @@ export default function AllowlistFunnel() {
         evmAddress: address.trim(),
         captchaToken: "mock-captcha-token",
       });
-      setEvmAddress(address.trim());
-      markAllowlisted();
-      setResult(res);
+
+      if (res.progress) applyServerProgress(res.progress);
+      else {
+        setEvmAddress(address.trim());
+        markAllowlisted();
+      }
+
+      setResult({ ok: true, rank: res.rank, points: res.points, allowlisted: true });
       setShowSuccess(true);
+    } catch (err) {
+      // The database rejected it. These are the anti-sybil rules firing, so
+      // say plainly which one — a generic failure just gets retried forever.
+      setAddressError(
+        err instanceof ApiError && err.code === "address_taken"
+          ? "That address is already on the list. One squib per address — try another."
+          : err instanceof ApiError && err.code === "already_entered"
+            ? "This account already has a spot. Check the leaderboard for your rank."
+            : "That didn't go through. Give it a moment and try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -113,7 +144,7 @@ export default function AllowlistFunnel() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setX(null)}
+                  onClick={handleDisconnect}
                   className="shrink-0 rounded-full text-xs text-ink/45 underline underline-offset-4 transition hover:text-ink"
                 >
                   Switch
@@ -148,6 +179,7 @@ export default function AllowlistFunnel() {
                   status={progress.tasks[task.id]}
                   disabled={!connected}
                   onStatus={(s) => setTask(task.id, s)}
+                  onServerProgress={applyServerProgress}
                 />
               ))}
             </ul>
@@ -341,20 +373,29 @@ function TaskRow({
   status,
   disabled,
   onStatus,
+  onServerProgress,
 }: {
   task: Task;
   status: "pending" | "verifying" | "done";
   disabled: boolean;
   onStatus: (s: "pending" | "verifying" | "done") => void;
+  onServerProgress: (p: UserProgress) => void;
 }) {
   const done = status === "done";
   const busy = status === "verifying";
 
   async function handleVerify() {
     onStatus("verifying");
-    // INTEGRATION: task verification (Zealy / Galxe / TaskOn, or the X API)
-    const { verified } = await verifyTask(task.id);
-    onStatus(verified ? "done" : "pending");
+    try {
+      // INTEGRATION: task verification (Zealy / Galxe / TaskOn, or the X API)
+      const { verified, progress } = await verifyTask(task.id);
+      // In Supabase mode the award already happened server-side and the fresh
+      // state comes back with it; locally we set the status ourselves.
+      if (progress) onServerProgress(progress);
+      else onStatus(verified ? "done" : "pending");
+    } catch {
+      onStatus("pending");
+    }
   }
 
   return (

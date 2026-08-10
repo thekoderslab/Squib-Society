@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { fetchMe } from "@/lib/api";
 import { POINTS, STORAGE_KEY } from "@/lib/constants";
 import { daysBetween, localDayKey } from "@/lib/dates";
 import type { TaskId, TaskStatus, UserProgress, XAccount } from "@/lib/types";
@@ -33,7 +34,14 @@ const EMPTY: UserProgress = {
 type Ctx = {
   /** False during the first client render — render neutral placeholders until true. */
   hydrated: boolean;
+  /**
+   * "server" once Supabase has answered — the ledger is then authoritative and
+   * nothing is written to localStorage. "local" is the zero-config fallback.
+   */
+  mode: "local" | "server";
   progress: UserProgress;
+  /** Replace local state with what the server just returned. */
+  applyServerProgress: (p: UserProgress) => void;
   setX: (x: XAccount | null) => void;
   setTask: (id: TaskId, status: TaskStatus) => void;
   setEvmAddress: (address: string) => void;
@@ -65,20 +73,45 @@ function load(): UserProgress {
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<UserProgress>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
+  const [mode, setMode] = useState<"local" | "server">("local");
 
   useEffect(() => {
+    let live = true;
+
+    // Paint from localStorage first so the UI is never blank, then ask the
+    // server. If Supabase is configured its answer wins outright — a stale
+    // local copy must never be able to inflate a points total.
     setProgress(load());
     setHydrated(true);
+
+    fetchMe()
+      .then(({ serverAvailable, progress: server }) => {
+        if (!live || !serverAvailable) return;
+        setMode("server");
+        setProgress(server ?? EMPTY);
+      })
+      .catch(() => {
+        /* stay in local mode */
+      });
+
+    return () => {
+      live = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || mode === "server") return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     } catch {
       /* private mode — the session just won't persist */
     }
-  }, [progress, hydrated]);
+  }, [progress, hydrated, mode]);
+
+  const applyServerProgress = useCallback((p: UserProgress) => {
+    setMode("server");
+    setProgress(p);
+  }, []);
 
   const patch = useCallback(
     (fn: (p: UserProgress) => UserProgress) => setProgress((p) => fn(p)),
@@ -203,6 +236,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       hydrated,
+      mode,
+      applyServerProgress,
       progress,
       setX,
       setTask,
@@ -218,6 +253,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }),
     [
       hydrated,
+      mode,
+      applyServerProgress,
       progress,
       setX,
       setTask,

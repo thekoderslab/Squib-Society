@@ -3,8 +3,8 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 
+import { requestSpin } from "@/lib/api";
 import { GTD_SPIN_ODDS } from "@/lib/constants";
-import { requestSpin } from "@/lib/mock-api";
 import { useProgress } from "@/state/progress";
 import Button from "../ui/Button";
 
@@ -22,7 +22,7 @@ const WIN_SEGMENT = 0;
  * odds into this file.
  */
 export default function SpinWheel() {
-  const { progress, recordSpin } = useProgress();
+  const { progress, recordSpin, applyServerProgress } = useProgress();
   const reduce = useReducedMotion();
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -45,9 +45,11 @@ export default function SpinWheel() {
     const landing = 360 * 5 + (360 - target * SEG_DEG - SEG_DEG / 2);
     setRotation(landing);
 
+    // The result is already decided and recorded; the delay is only the wheel.
     window.setTimeout(
       () => {
-        recordSpin(res.upgraded);
+        if (res.progress) applyServerProgress(res.progress);
+        else recordSpin(res.upgraded);
         setOutcome(res.upgraded);
         setSpinning(false);
       },

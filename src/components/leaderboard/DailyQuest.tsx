@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { getDailyQuest } from "@/lib/mock-api";
+import { earn, getDailyQuest } from "@/lib/api";
 import { localDayKey } from "@/lib/dates";
 import type { DailyQuest as Quest } from "@/lib/types";
 import { useProgress } from "@/state/progress";
@@ -10,7 +10,7 @@ import Button from "../ui/Button";
 import Chip, { Check } from "../ui/Chip";
 
 export default function DailyQuestCard() {
-  const { hydrated, progress, completeQuest } = useProgress();
+  const { hydrated, progress, completeQuest, applyServerProgress } = useProgress();
   const [quest, setQuest] = useState<Quest | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -22,12 +22,16 @@ export default function DailyQuestCard() {
 
   async function handleDone() {
     setBusy(true);
-    // INTEGRATION: task verification — quest platform confirms, then the
-    // ledger awards. Self-reporting is fine for a soft daily; the streak and
-    // the leaderboard are what actually carry weight.
-    await new Promise((r) => setTimeout(r, 700));
-    completeQuest();
-    setBusy(false);
+    try {
+      // INTEGRATION: task verification — quest platform confirms, then the
+      // ledger awards. Self-reporting is fine for a soft daily; the streak and
+      // the leaderboard are what actually carry weight.
+      const { progress: server } = await earn("quest", { day: localDayKey() });
+      if (server) applyServerProgress(server);
+      else completeQuest();
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

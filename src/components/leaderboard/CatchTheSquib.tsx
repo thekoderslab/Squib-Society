@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { earn } from "@/lib/api";
 import { POINTS } from "@/lib/constants";
 import { localDayKey } from "@/lib/dates";
 import { useProgress } from "@/state/progress";
-import SquibArt from "../art/SquibArt";
+import SquibHead from "../art/SquibHead";
 import Button from "../ui/Button";
 import Chip from "../ui/Chip";
 
@@ -18,7 +19,7 @@ const POP_MS = 900;
  * to open the page, not a grind that lets the most patient person buy rank.
  */
 export default function CatchTheSquib() {
-  const { hydrated, progress, recordGame } = useProgress();
+  const { hydrated, progress, recordGame, applyServerProgress } = useProgress();
   const [phase, setPhase] = useState<"idle" | "playing" | "over">("idle");
   const [active, setActive] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -59,11 +60,21 @@ export default function CatchTheSquib() {
     };
   }, [phase, stop]);
 
-  // Award once, when the round ends.
+  // Award once, when the round ends. The server caps and re-derives the
+  // points from the score, so a tampered score can't mint more than the cap.
   useEffect(() => {
     if (phase !== "over" || awarded !== null) return;
     setAwarded(recordGame(score));
-  }, [phase, score, awarded, recordGame]);
+    earn("game", { day: localDayKey(), score })
+      .then(({ awarded: serverAwarded, progress: server }) => {
+        if (!server) return;
+        applyServerProgress(server);
+        setAwarded(serverAwarded);
+      })
+      .catch(() => {
+        /* keep the local award */
+      });
+  }, [phase, score, awarded, recordGame, applyServerProgress]);
 
   function start() {
     setScore(0);
@@ -111,10 +122,9 @@ export default function CatchTheSquib() {
             className="relative aspect-square overflow-hidden rounded-squib border border-hairline bg-cream disabled:cursor-default"
           >
             {active === i ? (
-              <SquibArt
-                variant="ninja"
-                label=""
-                className="absolute inset-x-[12%] bottom-0 h-[86%] w-[76%] animate-pop"
+              <SquibHead
+                size={160}
+                className="absolute inset-x-[10%] bottom-[6%] h-[80%] w-[80%] animate-pop object-contain"
               />
             ) : null}
           </button>

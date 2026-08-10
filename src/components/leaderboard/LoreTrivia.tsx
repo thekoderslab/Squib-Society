@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { earn, getDailyTrivia } from "@/lib/api";
 import { POINTS } from "@/lib/constants";
-import { getDailyTrivia } from "@/lib/mock-api";
 import { localDayKey } from "@/lib/dates";
 import type { TriviaQuestion } from "@/lib/types";
 import { useProgress } from "@/state/progress";
@@ -11,7 +11,7 @@ import Chip, { Check } from "../ui/Chip";
 
 /** Cheap to run, and it quietly filters for people who read anything. */
 export default function LoreTrivia() {
-  const { hydrated, progress, completeTrivia } = useProgress();
+  const { hydrated, progress, completeTrivia, applyServerProgress } = useProgress();
   const [q, setQ] = useState<TriviaQuestion | null>(null);
   const [picked, setPicked] = useState<number | null>(null);
 
@@ -21,10 +21,18 @@ export default function LoreTrivia() {
   const revealed = picked !== null || answeredToday;
   const correct = q && picked !== null ? picked === q.answerIndex : null;
 
-  function pick(i: number) {
+  async function pick(i: number) {
     if (revealed || !q) return;
     setPicked(i);
-    completeTrivia(i === q.answerIndex);
+    const correct = i === q.answerIndex;
+    // Optimistic locally, authoritative on the server — a wrong answer still
+    // burns the day either way.
+    completeTrivia(correct);
+    const { progress: server } = await earn("trivia", {
+      day: localDayKey(),
+      correct,
+    });
+    if (server) applyServerProgress(server);
   }
 
   return (

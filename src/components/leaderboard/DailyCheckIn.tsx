@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { earn } from "@/lib/api";
 import { POINTS } from "@/lib/constants";
-import { checkIn } from "@/lib/mock-api";
 import { addDays, dayKeyToDate, localDayKey, recentDays } from "@/lib/dates";
 import { useProgress } from "@/state/progress";
 import Button from "../ui/Button";
@@ -17,7 +17,7 @@ const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
  * follower count — returning beats reach.
  */
 export default function DailyCheckIn() {
-  const { hydrated, progress, doCheckIn } = useProgress();
+  const { hydrated, progress, doCheckIn, applyServerProgress } = useProgress();
   const [busy, setBusy] = useState(false);
   const [awarded, setAwarded] = useState<number | null>(null);
 
@@ -45,10 +45,17 @@ export default function DailyCheckIn() {
   async function handleCheckIn() {
     setBusy(true);
     try {
-      // INTEGRATION: points ledger — write the check-in server-side
-      await checkIn();
-      const points = doCheckIn();
-      setAwarded(points);
+      // INTEGRATION: points ledger — the streak is computed and stored inside
+      // a single locking transaction server-side, so two tabs can't double it.
+      const { awarded: serverAwarded, progress: server } = await earn("checkin", {
+        day: today,
+      });
+      if (server) {
+        applyServerProgress(server);
+        setAwarded(serverAwarded);
+      } else {
+        setAwarded(doCheckIn());
+      }
     } finally {
       setBusy(false);
     }

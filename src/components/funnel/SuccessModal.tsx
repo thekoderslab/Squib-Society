@@ -1,10 +1,11 @@
 "use client";
 
+import { buildShareIntent, earn } from "@/lib/api";
 import { POINTS, WL_WINNERS } from "@/lib/constants";
-import { buildShareIntent } from "@/lib/mock-api";
+import { localDayKey } from "@/lib/dates";
 import type { SubmitResult } from "@/lib/types";
 import { useProgress } from "@/state/progress";
-import SquibArt from "../art/SquibArt";
+import SquibHead from "../art/SquibHead";
 import { LinkButton } from "../ui/Button";
 import Modal, { ModalClose } from "../ui/Modal";
 import SpinWheel from "./SpinWheel";
@@ -18,8 +19,16 @@ export default function SuccessModal({
   onClose: () => void;
   result: SubmitResult | null;
 }) {
-  const { progress } = useProgress();
+  const { progress, applyServerProgress } = useProgress();
   const rank = result?.rank ?? null;
+
+  // The share bonus is credited when they open the intent. Verifying that the
+  // post actually happened is the least reliable check of the four, which is
+  // exactly why this is a bonus and not a gate.
+  async function creditShare() {
+    const { progress: server } = await earn("share", { day: localDayKey() });
+    if (server) applyServerProgress(server);
+  }
 
   return (
     <Modal open={open} onClose={onClose} labelledBy="wl-success-title" className="max-w-xl">
@@ -27,11 +36,7 @@ export default function SuccessModal({
         <ModalClose onClose={onClose} />
 
         <div className="flex items-center gap-4">
-          <SquibArt
-            variant="baseball"
-            label=""
-            className="h-20 w-20 shrink-0 animate-bob"
-          />
+          <SquibHead size={160} className="h-20 w-20 shrink-0 animate-bob" />
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-squib-deep">
               Allowlisted
@@ -71,6 +76,7 @@ export default function SuccessModal({
             href={buildShareIntent(rank)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={creditShare}
             size="lg"
             className="w-full"
           >

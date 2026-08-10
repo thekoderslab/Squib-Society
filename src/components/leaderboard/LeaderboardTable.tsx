@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { getLeaderboard } from "@/lib/api";
 import { WL_WINNERS } from "@/lib/constants";
-import { getLeaderboard } from "@/lib/mock-api";
 import type { LeaderboardEntry } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Avatar from "../art/Avatar";
