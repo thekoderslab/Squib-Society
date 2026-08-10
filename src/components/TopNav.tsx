@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { NAV_LINKS } from "@/lib/constants";
@@ -8,6 +10,7 @@ import Wordmark from "./Wordmark";
 
 export default function TopNav() {
   const [lifted, setLifted] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setLifted(window.scrollY > 12);
@@ -28,28 +31,59 @@ export default function TopNav() {
         aria-label="Primary"
         className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 sm:px-8"
       >
-        <a href="#top" className="rounded-full" aria-label="Squib Society, back to top">
+        <Link href="/" className="rounded-full" aria-label="Squib Society, home">
           <Wordmark compact />
-        </a>
+        </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
           <ul className="mr-1 hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map((l) => (
-              <li key={l.href}>
-                <a
-                  href={l.href}
-                  className="rounded-full px-3 py-2 text-sm text-ink/65 transition hover:bg-ink/[0.05] hover:text-ink"
-                >
-                  {l.label}
-                </a>
-              </li>
-            ))}
+            {NAV_LINKS.map((l) => {
+              const active = pathname === l.href;
+              return (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`rounded-full px-3 py-2 text-sm transition ${
+                      active
+                        ? "bg-ink/[0.06] font-medium text-ink"
+                        : "text-ink/60 hover:bg-ink/[0.04] hover:text-ink"
+                    }`}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
-          <LinkButton href="#allowlist" size="sm">
+          <LinkButton href="/allowlist" size="sm">
             Join allowlist
           </LinkButton>
         </div>
       </nav>
+
+      {/* Mobile: the nav links move to a scrollable rail rather than a burger —
+          four destinations don't earn a menu that hides them. */}
+      <div className="border-t border-hairline/60 md:hidden">
+        <ul className="mx-auto flex w-full max-w-6xl gap-1 overflow-x-auto px-3 py-2">
+          {NAV_LINKS.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <li key={l.href} className="shrink-0">
+                <Link
+                  href={l.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`block rounded-full px-3 py-1.5 text-[13px] transition ${
+                    active ? "bg-ink text-cream" : "text-ink/60"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </header>
   );
 }

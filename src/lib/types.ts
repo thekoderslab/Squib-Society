@@ -1,26 +1,14 @@
-export type SquibVariant =
-  | "boxer"
-  | "explorer"
-  | "skater"
-  | "baseball"
-  | "ninja"
-  | "chef"
-  | "gardener"
-  | "dj"
-  | "firefighter";
-
 export type Squib = {
-  /** Token id, 1-indexed, zero padded when displayed. */
+  /** Token id, zero padded to four digits when displayed. */
   id: number;
   name: string;
+  /** What they do. Drives the display copy, not the art. */
   role: string;
   bio: string;
-  variant: SquibVariant;
-  /**
-   * Real studio photo, once shot. Until then the tile renders the vector
-   * stand-in for `variant`. Drop files in /public/squibs and fill this in.
-   */
-  photo?: string;
+  /** Square render in /public/squibs. */
+  photo: string;
+  /** Where the shot was taken — small caption detail on the squib page. */
+  scene: string;
 };
 
 export type RevealProgress = {

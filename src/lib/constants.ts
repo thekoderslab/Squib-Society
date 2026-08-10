@@ -42,20 +42,28 @@ export const POINTS = {
  * vault once that allowlist count is hit — not the increment.
  */
 export const REVEAL_MILESTONES = [
-  { allowlisted: 1_000, reveals: 3, label: "First light" },
-  { allowlisted: 2_000, reveals: 6, label: "Second look" },
-  { allowlisted: 3_000, reveals: 9, label: "Third look" },
-  { allowlisted: 5_000, reveals: 15, label: "Half the shelf" },
+  { allowlisted: 1_000, reveals: 4, label: "First light" },
+  { allowlisted: 2_000, reveals: 7, label: "Second look" },
+  { allowlisted: 3_000, reveals: 10, label: "Third look" },
+  { allowlisted: 5_000, reveals: 16, label: "Half the shelf" },
   { allowlisted: 10_000, reveals: 24, label: "The big open" },
 ] as const;
+
+/** Brand marks. The bare squib head is the logo. */
+export const LOGO = {
+  /** Sits on any background — used in the nav, footer and ambient moments. */
+  mark: "/logo/squib-logo-transparent.png",
+  /** Lime field, for the favicon, OG card and social avatars. */
+  badge: "/logo/squib-logo-lime-ccff00.png",
+} as const;
 
 export const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 
 export const NAV_LINKS = [
-  { label: "Peek", href: "#peek" },
-  { label: "Roadmap", href: "#roadmap" },
-  { label: "Allowlist", href: "#allowlist" },
-  { label: "Leaderboard", href: "#leaderboard" },
+  { label: "Vault", href: "/vault" },
+  { label: "Roadmap", href: "/roadmap" },
+  { label: "Allowlist", href: "/allowlist" },
+  { label: "Leaderboard", href: "/leaderboard" },
 ] as const;
 
 /** localStorage key for the mocked user session. Bump the suffix to reset. */

@@ -1,7 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Mono } from "next/font/google";
 
-import { CHAIN, COLLECTION_NAME, MINT_VENUE, TOTAL_SUPPLY } from "@/lib/constants";
+import Footer from "@/components/Footer";
+import TopNav from "@/components/TopNav";
+import {
+  CHAIN,
+  COLLECTION_NAME,
+  LOGO,
+  MINT_VENUE,
+  SITE_URL,
+  TOTAL_SUPPLY,
+} from "@/lib/constants";
 import { ProgressProvider } from "@/state/progress";
 import "./globals.css";
 
@@ -14,12 +23,27 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${COLLECTION_NAME} — ${TOTAL_SUPPLY} tiny old gods took up hobbies`,
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${COLLECTION_NAME} — ${TOTAL_SUPPLY} tiny old gods took up hobbies`,
+    template: `%s — ${COLLECTION_NAME}`,
+  },
   description: `A collection of ${TOTAL_SUPPLY} designer-toy squibs. Allowlist open now. Minting on ${MINT_VENUE}, on ${CHAIN}.`,
+  icons: {
+    icon: LOGO.badge,
+    apple: LOGO.badge,
+  },
   openGraph: {
-    title: `${COLLECTION_NAME}`,
+    title: COLLECTION_NAME,
     description: `${TOTAL_SUPPLY} tiny old gods took up hobbies. Join the allowlist.`,
     type: "website",
+    images: [{ url: LOGO.badge, width: 1200, height: 1200 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: COLLECTION_NAME,
+    description: `${TOTAL_SUPPLY} tiny old gods took up hobbies.`,
+    images: [LOGO.badge],
   },
 };
 
@@ -33,8 +57,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={spaceMono.variable}>
       <head>
-        {/* Display + body faces. Fontshare is the source for Clash Display and
-            Satoshi; both fall back to a rounded system stack in globals.css. */}
+        {/* Display + body faces. Fontshare serves Clash Display and Satoshi;
+            both fall back to a rounded system stack in globals.css. */}
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="" />
         <link
@@ -42,14 +66,20 @@ export default function RootLayout({
           href="https://api.fontshare.com/v2/css?f%5B%5D=clash-display@600,700,500&f%5B%5D=satoshi@400,500,700&display=swap"
         />
       </head>
-      <body className="min-h-dvh bg-cream text-ink antialiased">
+      <body className="flex min-h-dvh flex-col bg-cream text-ink antialiased">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-squib focus:px-4 focus:py-2 focus:text-white"
         >
           Skip to content
         </a>
-        <ProgressProvider>{children}</ProgressProvider>
+        <ProgressProvider>
+          <TopNav />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </ProgressProvider>
       </body>
     </html>
   );

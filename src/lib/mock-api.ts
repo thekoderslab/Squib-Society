@@ -44,81 +44,98 @@ const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  */
 export const REVEALED_SQUIBS: Squib[] = [
   {
-    id: 1,
-    name: "Beacon",
-    role: "Jungle explorer",
-    variant: "explorer",
-    bio: "Mapped a continent that predates continents. Still gets lost in the produce aisle.",
-    // photo: "/squibs/0001-explorer.png",
-  },
-  {
     id: 9,
-    name: "Comet",
+    name: "Mage",
     role: "Skater",
-    variant: "skater",
-    bio: "Has fallen from stranger heights. Landed the kickflip on the 4,000th try and screamed.",
-    // photo: "/squibs/0009-skater.png",
-  },
-  {
-    id: 16,
-    name: "Warden",
-    role: "Baseball player",
-    variant: "baseball",
-    bio: "Guarded a sunken gate for an age and a half. Now guards third base, equally seriously.",
-    // photo: "/squibs/0016-baseball.png",
+    photo: "/squibs/0009-mage-squib.png",
+    scene: "Skatepark, late afternoon",
+    bio: "Named for what he used to be. Kickflips now, cosmic dread later — he's booked solid until Thursday.",
   },
   {
     id: 18,
-    name: "Hush",
+    name: "Comet",
     role: "Ninja",
-    variant: "ninja",
-    bio: "Can move without sound, cannot enter a room without announcing the snack situation.",
-    // photo: "/squibs/0018-ninja.png",
+    photo: "/squibs/0018-comet-squib.png",
+    scene: "Raked gravel garden",
+    bio: "Moves without a sound. Still cannot enter a room without announcing the snack situation.",
   },
   {
-    id: 25,
-    name: "Mage",
-    role: "Boxer",
-    variant: "boxer",
-    bio: "Retired the old titles for a new one. Trains at 5am because the void keeps early hours.",
-    // photo: "/squibs/0025-boxer.png",
+    id: 52,
+    name: "Fox",
+    role: "Winter walker",
+    photo: "/squibs/0052-fox-squib.png",
+    scene: "Snowed-in park bridge",
+    bio: "Sat out an ice age and found it a bit warm. The scarf is not up for discussion.",
   },
   {
-    id: 47,
-    name: "Simmer",
-    role: "Line cook",
-    variant: "chef",
-    bio: "Once boiled an ocean by accident. Now boils exactly 240ml and calls it growth.",
+    id: 63,
+    name: "Sprite",
+    role: "Highland formal",
+    photo: "/squibs/0063-sprite-squib.png",
+    scene: "Loch-side castle",
+    bio: "Wears the tartan of a clan that predates clans. Nobody has asked to see the paperwork.",
   },
   {
-    id: 88,
-    name: "Sprout",
-    role: "Gardener",
-    variant: "gardener",
-    bio: "Talks to the tomatoes in a language that predates tomatoes. They seem into it.",
+    id: 80,
+    name: "Warden",
+    role: "Forest archer",
+    photo: "/squibs/0080-warden-squib.png",
+    scene: "Overgrown ruins",
+    bio: "Guarded a sunken gate for an age and a half. Now guards the tree line and one specific patch of moss.",
   },
   {
-    id: 120,
-    name: "Static",
-    role: "DJ",
-    variant: "dj",
-    bio: "Beatmatches at frequencies humans file under 'weather'. Sunday sets only.",
+    id: 184,
+    name: "Lotus",
+    role: "Chef",
+    photo: "/squibs/0184-lotus-squib.png",
+    scene: "Marble kitchen, morning",
+    bio: "Once boiled an ocean by accident. Now boils exactly 240ml and calls that growth.",
   },
   {
-    id: 201,
-    name: "Ember",
-    role: "Firefighter",
-    variant: "firefighter",
-    bio: "Spent eons in the dark under the sea. Volunteered for the thing with the most light.",
+    id: 355,
+    name: "Drifter",
+    role: "Harbour regular",
+    photo: "/squibs/0355-drifter-squib.png",
+    scene: "Marina, off season",
+    bio: "Came in on a tide nobody logged. Knows every boat here by the noise it makes at night.",
+  },
+  {
+    id: 356,
+    name: "Fox",
+    role: "Off duty",
+    photo: "/squibs/0356-fox-squib.png",
+    scene: "Sunlit courtyard",
+    bio: "Owns one jacket. Wears it everywhere. Has never once been cold, or wrong.",
+  },
+  {
+    id: 368,
+    name: "Paper Planet",
+    role: "Incognito",
+    photo: "/squibs/0368-paper-planet-squib.png",
+    scene: "Toy room",
+    bio: "The face is under there somewhere. The bear is called Gerald and Gerald has seen things.",
+  },
+  {
+    id: 369,
+    name: "Skullknit",
+    role: "Workshop punk",
+    photo: "/squibs/0369-skullknit-squib.png",
+    scene: "Empty workshop",
+    bio: "Wears the old face on the outside so you know what you're dealing with. Still holds the door for people.",
   },
 ];
+
+/** Fast lookup for the /squib/[id] pages. */
+export function getSquibById(id: number): Squib | undefined {
+  return REVEALED_SQUIBS.find((s) => s.id === id);
+}
 
 /**
  * Fixed, spread-out positions in the 369 grid so the revealed tiles read as
  * scattered discoveries rather than a block in the corner.
  */
 export const REVEALED_SLOTS: number[] = [
-  4, 37, 66, 101, 140, 183, 226, 279, 331,
+  4, 37, 66, 101, 140, 168, 205, 247, 296, 341,
 ];
 
 /** Vault tile index (0-based) → squib, for the tiles that are unlocked. */

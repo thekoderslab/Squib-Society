@@ -1,7 +1,10 @@
+import Link from "next/link";
+
 import {
   CHAIN,
   COLLECTION_NAME,
   MINT_VENUE,
+  NAV_LINKS,
   OPENSEA_URL,
   TOTAL_SUPPLY,
   X_HANDLE,
@@ -10,39 +13,70 @@ import {
 import { XLogo } from "./funnel/icons";
 import Wordmark from "./Wordmark";
 
+const PAGES = [...NAV_LINKS, { label: "FAQ", href: "/faq" }];
+
 export default function Footer() {
   return (
     <footer className="border-t border-hairline">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-12 sm:px-8 sm:py-14 md:flex-row md:items-center md:justify-between">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Wordmark />
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink/50">
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink/50">
             {TOTAL_SUPPLY} designer-toy squibs. Minting on {MINT_VENUE}, on {CHAIN}.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <a
-            href={X_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-hairline bg-surface px-4 text-sm shadow-card transition hover:border-ink/30"
-          >
-            <XLogo className="h-3.5 w-3.5" />
-            {X_HANDLE}
-          </a>
-          <a
-            href={OPENSEA_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-10 items-center rounded-full border border-hairline bg-surface px-4 text-sm shadow-card transition hover:border-ink/30"
-          >
-            {MINT_VENUE}
-          </a>
-          <span className="inline-flex h-10 items-center gap-2 rounded-full border border-hairline bg-surface px-4 text-sm text-ink/60 shadow-card">
-            <span className="h-1.5 w-1.5 rounded-full bg-squib" aria-hidden />
-            {CHAIN}
-          </span>
+        <nav aria-label="Footer">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/40">
+            Pages
+          </h2>
+          <ul className="mt-4 space-y-2.5">
+            {PAGES.map((p) => (
+              <li key={p.href}>
+                <Link
+                  href={p.href}
+                  className="text-sm text-ink/60 transition hover:text-ink"
+                >
+                  {p.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div>
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink/40">
+            Elsewhere
+          </h2>
+          <ul className="mt-4 space-y-2.5">
+            <li>
+              <a
+                href={X_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-ink/60 transition hover:text-ink"
+              >
+                <XLogo className="h-3 w-3" />
+                {X_HANDLE}
+              </a>
+            </li>
+            <li>
+              <a
+                href={OPENSEA_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-ink/60 transition hover:text-ink"
+              >
+                {MINT_VENUE}
+              </a>
+            </li>
+            <li>
+              <span className="inline-flex items-center gap-2 text-sm text-ink/60">
+                <span className="h-1.5 w-1.5 rounded-full bg-squib" aria-hidden />
+                {CHAIN}
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
 

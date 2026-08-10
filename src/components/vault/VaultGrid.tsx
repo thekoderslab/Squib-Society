@@ -1,38 +1,29 @@
 "use client";
 
-import {
-  memo,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  type MouseEvent,
-} from "react";
+import Link from "next/link";
+import { memo, useCallback, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { TOTAL_SUPPLY } from "@/lib/constants";
 import { getVaultMap } from "@/lib/mock-api";
 import type { Squib } from "@/lib/types";
 import LockedSquib, { LockedSquibDefs } from "../art/LockedSquib";
-import SquibImage from "../art/SquibImage";
-import SquibModal from "./SquibModal";
+import SquibPhoto from "../art/SquibPhoto";
 
 const TILE_COUNT = TOTAL_SUPPLY;
 
 export default function VaultGrid() {
   const vault = useMemo(() => getVaultMap(), []);
-  const [selected, setSelected] = useState<Squib | null>(null);
   const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
-
-  /**
-   * One delegated handler and one tooltip node for all 360 locked tiles.
-   * Per-tile listeners and per-tile tooltips would put ~1,000 extra nodes on
-   * the page for a hover hint.
-   */
   const hovered = useRef<Element | null>(null);
 
+  /**
+   * One delegated handler and one tooltip node for all 359 locked tiles.
+   * Per-tile listeners and per-tile tooltips would add roughly a thousand
+   * nodes to the page for a hover hint.
+   */
   const onGridMove = useCallback((e: MouseEvent<HTMLUListElement>) => {
     const el = (e.target as HTMLElement).closest("[data-locked]");
-    if (el === hovered.current) return; // same tile — nothing to update
+    if (el === hovered.current) return;
     hovered.current = el;
     if (!el) {
       setTip(null);
@@ -49,8 +40,8 @@ export default function VaultGrid() {
       <LockedSquibDefs />
 
       <p className="sr-only">
-        {vault.size} of {TILE_COUNT} squibs are revealed. The remaining {locked}{" "}
-        are locked and unlock at community milestones.
+        {vault.size} of {TILE_COUNT} squibs are revealed. The remaining {locked} are
+        locked and open at community milestones.
       </p>
 
       <ul
@@ -64,14 +55,13 @@ export default function VaultGrid() {
         {Array.from({ length: TILE_COUNT }, (_, i) => {
           const squib = vault.get(i);
           return squib ? (
-            <RevealedTile key={i} squib={squib} onOpen={setSelected} />
+            <RevealedTile key={i} squib={squib} />
           ) : (
             <LockedTile key={i} />
           );
         })}
       </ul>
 
-      {/* single floating tooltip, positioned over whichever locked tile is hovered */}
       {tip ? (
         <div
           role="presentation"
@@ -81,8 +71,6 @@ export default function VaultGrid() {
           Locked — reveal soon
         </div>
       ) : null}
-
-      <SquibModal squib={selected} onClose={() => setSelected(null)} />
     </>
   );
 }
@@ -105,34 +93,22 @@ const LockedTile = memo(function LockedTile() {
   );
 });
 
-const RevealedTile = memo(function RevealedTile({
-  squib,
-  onOpen,
-}: {
-  squib: Squib;
-  onOpen: (s: Squib) => void;
-}) {
+const RevealedTile = memo(function RevealedTile({ squib }: { squib: Squib }) {
   return (
     <li className="relative aspect-square">
-      <button
-        type="button"
-        onClick={() => onOpen(squib)}
+      <Link
+        href={`/squib/${String(squib.id).padStart(4, "0")}`}
         className="group relative block h-full w-full overflow-hidden rounded-lg border border-hairline bg-surface shadow-card outline-offset-2 transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:rotate-[-2.5deg] hover:shadow-lift sm:rounded-xl"
       >
         <span className="sr-only">
-          {squib.name}, the {squib.role.toLowerCase()}. Open details.
+          {squib.name}, the {squib.role.toLowerCase()}
         </span>
-        <SquibImage
+        <SquibPhoto
           squib={squib}
-          className="h-full w-full object-contain p-[6%] transition-transform duration-300 group-hover:scale-[1.06]"
+          sizes="(max-width: 640px) 12vw, (max-width: 1024px) 8vw, 60px"
+          className="h-full w-full scale-[1.35] object-cover transition-transform duration-300 group-hover:scale-[1.45]"
         />
-        <span
-          className="pointer-events-none absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-surface via-surface/85 to-transparent pb-1 pt-3 text-center font-mono text-[9px] text-ink/55 md:block"
-          aria-hidden
-        >
-          {String(squib.id).padStart(4, "0")}
-        </span>
-      </button>
+      </Link>
     </li>
   );
 });
