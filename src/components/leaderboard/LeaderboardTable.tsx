@@ -48,23 +48,23 @@ export default function LeaderboardTable() {
   const youOffscreen = you && you.rank > shown.length;
 
   return (
-    <div className="overflow-hidden rounded-card border border-hairline bg-surface shadow-card">
-      <div className="grid grid-cols-[3rem_1fr_auto] items-center gap-3 border-b border-hairline px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink/40 sm:px-5">
+    <div className="overflow-hidden rounded-card border-2 border-hairline bg-surface shadow-card">
+      <div className="grid grid-cols-[3rem_1fr_auto] items-center gap-3 border-b-2 border-hairline px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink/40 sm:px-5">
         <span>Rank</span>
         <span>Handle</span>
         <span className="text-right">Points</span>
       </div>
 
       {!entries ? (
-        <ul className="divide-y divide-hairline">
+        <ul className="divide-y-2 divide-hairline">
           {Array.from({ length: 6 }, (_, i) => (
             <li key={i} className="px-4 py-3.5 sm:px-5">
-              <div className="h-8 w-full animate-pulse rounded-full bg-ink/[0.04]" />
+              <div className="h-8 w-full animate-pulse rounded-none bg-ink/[0.04]" />
             </li>
           ))}
         </ul>
       ) : (
-        <ul className="divide-y divide-hairline">
+        <ul className="divide-y-2 divide-hairline">
           {shown.map((e) => (
             <Row key={e.handle} entry={e} />
           ))}
@@ -79,11 +79,11 @@ export default function LeaderboardTable() {
       ) : null}
 
       {entries && entries.length > VISIBLE ? (
-        <div className="border-t border-hairline px-4 py-3 text-center sm:px-5">
+        <div className="border-t-2 border-hairline px-4 py-3 text-center sm:px-5">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="rounded-full px-3 py-1.5 text-sm font-medium text-ink/60 transition hover:text-ink"
+            className="rounded-none px-3 py-1.5 text-sm font-medium text-ink/60 transition hover:text-ink"
           >
             {expanded ? "Show less" : `Show the top ${WL_WINNERS}`}
           </button>
@@ -117,7 +117,7 @@ function Row({ entry, pinned }: { entry: LeaderboardEntry; pinned?: boolean }) {
               {entry.isYou ? "You" : entry.displayName}
             </span>
             {entry.isYou ? (
-              <span className="rounded-full bg-squib px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+              <span className="rounded-none bg-squib px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-ink">
                 you
               </span>
             ) : null}

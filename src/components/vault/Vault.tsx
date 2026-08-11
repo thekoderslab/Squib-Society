@@ -16,7 +16,7 @@ export default async function Vault() {
       </Reveal>
 
       <Reveal delay={0.08}>
-        <div className="rounded-vault border border-hairline bg-surface p-4 shadow-card sm:p-6">
+        <div className="rounded-vault border-2 border-hairline bg-surface p-4 shadow-card sm:p-6">
           <VaultGrid />
         </div>
       </Reveal>

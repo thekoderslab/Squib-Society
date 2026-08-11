@@ -116,7 +116,7 @@ export default function AllowlistFunnel() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="overflow-hidden rounded-vault border border-hairline bg-surface shadow-lift">
+      <div className="overflow-hidden rounded-vault border-2 border-hairline bg-surface shadow-lift">
         <StepBar step={alreadyIn ? 4 : step} />
 
         <div className="space-y-8 p-5 sm:p-8">
@@ -128,9 +128,9 @@ export default function AllowlistFunnel() {
             done={connected}
           >
             {!hydrated ? (
-              <div className="h-11 w-full animate-pulse rounded-full bg-ink/[0.05]" />
+              <div className="h-11 w-full animate-pulse rounded-none bg-ink/[0.05]" />
             ) : connected ? (
-              <div className="flex items-center justify-between gap-3 rounded-full border border-hairline bg-cream py-2 pl-2 pr-4">
+              <div className="flex items-center justify-between gap-3 rounded-none border-2 border-hairline bg-cream py-2 pl-2 pr-4">
                 <span className="flex min-w-0 items-center gap-2.5">
                   <Avatar handle={progress.x!.handle} className="h-8 w-8" />
                   <span className="min-w-0">
@@ -145,7 +145,7 @@ export default function AllowlistFunnel() {
                 <button
                   type="button"
                   onClick={handleDisconnect}
-                  className="shrink-0 rounded-full text-xs text-ink/45 underline underline-offset-4 transition hover:text-ink"
+                  className="shrink-0 rounded-none text-xs text-ink/45 underline underline-offset-4 transition hover:text-ink"
                 >
                   Switch
                 </button>
@@ -171,7 +171,7 @@ export default function AllowlistFunnel() {
             done={baseTasksDone}
             dimmed={!connected}
           >
-            <ul className="divide-y divide-hairline overflow-hidden rounded-squib border border-hairline bg-cream">
+            <ul className="divide-y-2 divide-hairline overflow-hidden rounded-squib border-2 border-hairline bg-cream">
               {TASKS.map((task) => (
                 <TaskRow
                   key={task.id}
@@ -232,7 +232,7 @@ export default function AllowlistFunnel() {
               {/* INTEGRATION: sybil filtering — swap for hCaptcha/Turnstile and
                   verify the token server-side before writing to the ledger. */}
               <label
-                className={`flex cursor-pointer items-center gap-3 rounded-squib border border-hairline bg-cream px-4 py-3 text-sm ${
+                className={`flex cursor-pointer items-center gap-3 rounded-squib border-2 border-hairline bg-cream px-4 py-3 text-sm ${
                   !baseTasksDone || alreadyIn ? "pointer-events-none opacity-55" : ""
                 }`}
               >
@@ -249,7 +249,7 @@ export default function AllowlistFunnel() {
               </label>
 
               {alreadyIn ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-squib border border-squib/30 bg-squib-wash px-4 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-squib border-2 border-hairline bg-squib-wash px-4 py-3.5">
                   <p className="text-sm font-medium text-squib-deep">
                     You&apos;re on the allowlist.
                   </p>
@@ -297,16 +297,16 @@ export default function AllowlistFunnel() {
 function StepBar({ step }: { step: number }) {
   const labels = ["Connect", "Tasks", "Address"];
   return (
-    <div className="flex items-center gap-2 border-b border-hairline bg-cream px-5 py-3.5 sm:px-8">
+    <div className="flex items-center gap-2 border-b-2 border-hairline bg-cream px-5 py-3.5 sm:px-8">
       {labels.map((label, i) => {
         const n = i + 1;
         const state = step > n ? "done" : step === n ? "current" : "todo";
         return (
           <div key={label} className="flex flex-1 items-center gap-2">
             <span
-              className={`grid h-6 w-6 shrink-0 place-items-center rounded-full font-mono text-[10px] font-bold ${
+              className={`grid h-6 w-6 shrink-0 place-items-center rounded-none font-mono text-[10px] font-bold ${
                 state === "done"
-                  ? "bg-squib text-white"
+                  ? "bg-squib text-ink"
                   : state === "current"
                     ? "bg-ink text-cream"
                     : "bg-ink/[0.08] text-ink/40"
@@ -401,8 +401,8 @@ function TaskRow({
   return (
     <li className="flex items-center gap-3 px-4 py-3.5">
       <span
-        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${
-          done ? "bg-squib text-white" : "bg-ink/[0.06] text-ink/55"
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-none ${
+          done ? "bg-squib text-ink" : "bg-ink/[0.06] text-ink/55"
         }`}
       >
         {done ? <Check className="h-4 w-4" /> : <TaskIcon id={task.id as TaskId} />}
@@ -442,7 +442,7 @@ function TaskRow({
           type="button"
           onClick={handleVerify}
           disabled={disabled || busy}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-ink/25 px-3 text-xs font-medium transition hover:border-ink/60 hover:bg-ink/[0.04] disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-none border-2 border-hairline bg-surface px-3 font-display text-[11px] font-semibold uppercase tracking-wide transition hover:bg-ink hover:text-cream disabled:pointer-events-none disabled:opacity-40"
         >
           {busy ? <Spinner className="h-3 w-3" /> : null}
           {busy ? "Checking" : "Verify"}

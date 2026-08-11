@@ -62,7 +62,7 @@ export default function DailyCheckIn() {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-card border border-hairline bg-surface p-5 shadow-card">
+    <div className="flex h-full flex-col rounded-card border-2 border-hairline bg-surface p-5 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-display text-lg font-semibold tracking-tight">
@@ -73,7 +73,7 @@ export default function DailyCheckIn() {
           </p>
         </div>
         <span
-          className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 ${
+          className={`flex shrink-0 items-center gap-1.5 rounded-none px-3 py-1.5 ${
             progress.streak > 0 && hydrated
               ? "bg-flare/10 text-flare"
               : "bg-ink/[0.06] text-ink/45"
@@ -101,9 +101,9 @@ export default function DailyCheckIn() {
                 {DAY_LETTERS[d.getDay()]}
               </span>
               <span
-                className={`grid aspect-square w-full max-w-9 place-items-center rounded-lg text-[11px] font-medium ${
+                className={`grid aspect-square w-full max-w-9 place-items-center rounded-none text-[11px] font-medium ${
                   done
-                    ? "bg-squib text-white"
+                    ? "bg-squib text-ink"
                     : isToday
                       ? "border-2 border-dashed border-squib/50 bg-squib-wash text-ink/50"
                       : "bg-ink/[0.05] text-ink/30"

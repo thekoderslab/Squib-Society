@@ -83,7 +83,7 @@ export default function Modal({
           transition={{ duration: reduce ? 0 : 0.18 }}
         >
           <div
-            className="fixed inset-0 bg-ink/45 backdrop-blur-[2px]"
+            className="fixed inset-0 bg-ink/60 backdrop-blur-[2px]"
             onClick={onClose}
             aria-hidden
           />
@@ -97,7 +97,7 @@ export default function Modal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduce ? undefined : { opacity: 0, y: 8, scale: 0.985 }}
             transition={{ duration: reduce ? 0 : 0.24, ease: [0.22, 0.61, 0.36, 1] }}
-            className={`relative w-full max-w-lg rounded-vault border border-hairline bg-surface shadow-lift ${className}`}
+            className={`relative w-full max-w-lg rounded-vault border-2 border-hairline bg-surface shadow-lift ${className}`}
           >
             {children}
           </motion.div>
@@ -113,7 +113,7 @@ export function ModalClose({ onClose }: { onClose: () => void }) {
       type="button"
       onClick={onClose}
       aria-label="Close"
-      className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-hairline bg-cream text-ink/60 transition hover:text-ink"
+      className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-none border-2 border-hairline bg-cream text-ink/60 transition hover:text-ink"
     >
       <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
         <path

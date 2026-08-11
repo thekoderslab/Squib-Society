@@ -51,13 +51,13 @@ export default function SuccessModal({
         </div>
 
         <dl className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-squib border border-hairline bg-cream px-4 py-3">
+          <div className="rounded-squib border-2 border-hairline bg-cream px-4 py-3">
             <dt className="text-xs text-ink/50">Your rank</dt>
             <dd className="mt-1 font-mono text-2xl font-bold tabular">
               {rank ? `#${rank}` : "—"}
             </dd>
           </div>
-          <div className="rounded-squib border border-hairline bg-cream px-4 py-3">
+          <div className="rounded-squib border-2 border-hairline bg-cream px-4 py-3">
             <dt className="text-xs text-ink/50">Points</dt>
             <dd className="mt-1 font-mono text-2xl font-bold tabular">
               {progress.points}
@@ -85,7 +85,7 @@ export default function SuccessModal({
           </LinkButton>
         </div>
 
-        <div className="mt-6 border-t border-hairline pt-6">
+        <div className="mt-6 border-t-2 border-hairline pt-6">
           <SpinWheel />
         </div>
       </div>

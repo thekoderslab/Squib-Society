@@ -57,19 +57,20 @@ export default function RootLayout({
   return (
     <html lang="en" className={spaceMono.variable}>
       <head>
-        {/* Display + body faces. Fontshare serves Clash Display and Satoshi;
-            both fall back to a rounded system stack in globals.css. */}
+        {/* Bespoke Slab is the display face — vintage press weight with enough
+            bulk to carry the brutalist headlines. Satoshi stays for body copy.
+            Both fall back to a slab/system stack in globals.css. */}
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f%5B%5D=clash-display@600,700,500&f%5B%5D=satoshi@400,500,700&display=swap"
+          href="https://api.fontshare.com/v2/css?f%5B%5D=bespoke-slab@500,600,700&f%5B%5D=satoshi@400,500,700&display=swap"
         />
       </head>
       <body className="flex min-h-dvh flex-col bg-cream text-ink antialiased">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-squib focus:px-4 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:border-2 focus:border-hairline focus:bg-squib focus:px-4 focus:py-2 focus:font-display focus:uppercase focus:text-ink"
         >
           Skip to content
         </a>

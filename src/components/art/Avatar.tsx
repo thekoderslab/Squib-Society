@@ -34,7 +34,7 @@ export default function Avatar({
 
   return (
     <span
-      className={`inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-hairline ${className}`}
+      className={`inline-grid shrink-0 place-items-center overflow-hidden rounded-none border-2 border-hairline ${className}`}
       style={{ background: bg }}
       aria-hidden
     >

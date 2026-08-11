@@ -91,7 +91,7 @@ export default function CatchTheSquib() {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-card border border-hairline bg-surface p-5 shadow-card">
+    <div className="flex h-full flex-col rounded-card border-2 border-hairline bg-surface p-5 shadow-card">
       <div className="flex items-center justify-between gap-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-squib-deep">
           Catch the squib
@@ -119,7 +119,7 @@ export default function CatchTheSquib() {
             onClick={() => hit(i)}
             disabled={phase !== "playing"}
             aria-label={active === i ? "Squib is up — catch it" : "Empty hole"}
-            className="relative aspect-square overflow-hidden rounded-squib border border-hairline bg-cream disabled:cursor-default"
+            className="relative aspect-square overflow-hidden rounded-squib border-2 border-hairline bg-cream disabled:cursor-default"
           >
             {active === i ? (
               <SquibHead

@@ -13,7 +13,7 @@ export default function RevealBar({ progress }: { progress: RevealProgress }) {
   const pct = Math.min(100, (progress.allowlisted / GOAL) * 100);
 
   return (
-    <div className="rounded-card border border-hairline bg-surface p-5 shadow-card sm:p-7">
+    <div className="rounded-card border-2 border-hairline bg-surface p-5 shadow-card sm:p-7">
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div>
           <p className="font-mono text-3xl font-bold tabular tracking-tight sm:text-4xl">
@@ -45,7 +45,7 @@ export default function RevealBar({ progress }: { progress: RevealProgress }) {
       {/* the bar */}
       <div className="relative mt-7">
         <div
-          className="h-3 w-full overflow-hidden rounded-full bg-locked/70"
+          className="h-3 w-full overflow-hidden rounded-none bg-locked/70"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={GOAL}
@@ -55,7 +55,7 @@ export default function RevealBar({ progress }: { progress: RevealProgress }) {
           )} allowlisted toward the final reveal`}
         >
           <div
-            className="h-full rounded-full bg-squib transition-[width] duration-700"
+            className="h-full rounded-none bg-squib transition-[width] duration-700"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -73,7 +73,7 @@ export default function RevealBar({ progress }: { progress: RevealProgress }) {
                 style={{ left: `${left}%` }}
               >
                 <span
-                  className={`block h-3 w-[3px] rounded-full ${
+                  className={`block h-3 w-[3px] rounded-none ${
                     reached ? "bg-white/70" : isNext ? "bg-ink/70" : "bg-ink/25"
                   }`}
                   aria-hidden

@@ -4,49 +4,62 @@
 
 @layer base {
   :root {
-    /* ---- palette (mirrors tailwind.config.ts) ---- */
-    --bg-cream: #f4efe6;
-    --surface: #fbf8f2;
-    --ink: #262019;
+    /* ---- brutalist vintage palette (mirrors tailwind.config.ts) ---- */
+    --paper: #e9e1cf;
+    --card: #f6f1e3;
+    --ink: #17150f;
     --squib-green: #56b947;
-    --green-deep: #3e8f33;
-    --squib-red: #d8362b;
-    --locked: #d8cfc0;
-    --hairline: #e7e0d3;
+    --green-deep: #2e7226;
+    --oxide: #c1402e;
+    --locked: #d6cbb0;
 
     /* ---- type roles ----
-       Display + body come from Fontshare (loaded in layout.tsx).
-       Mono comes from next/font (Space Mono) as --font-space-mono. */
-    --font-display: "Clash Display", "Satoshi", ui-rounded, "Segoe UI", system-ui,
-      sans-serif;
+       Display is a slab: vintage press, brutalist weight.
+       Mono is Space Mono via next/font — counters, ranks, addresses, stamps. */
+    --font-display: "Bespoke Slab", "Clash Display", Rockwell, "Courier New",
+      Georgia, serif;
     --font-body: "Satoshi", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
     --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", monospace;
   }
 
   html {
     scroll-behavior: smooth;
-    /* sticky nav clearance for anchor jumps */
-    scroll-padding-top: 88px;
+    scroll-padding-top: 96px;
   }
 
   body {
-    background-color: var(--bg-cream);
+    background-color: var(--paper);
     color: var(--ink);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+
+    /* Aged stock: a faint fibre speckle across the whole page. Cheap, static,
+       and the single thing doing the "vintage" half of the brief. */
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(23, 21, 15, 0.055) 1px, transparent 0),
+      radial-gradient(circle at 3px 4px, rgba(23, 21, 15, 0.03) 1px, transparent 0);
+    background-size:
+      7px 7px,
+      11px 11px;
   }
 
-  /* Visible, on-brand keyboard focus. Never remove the ring. */
+  /* Brutalist focus: a hard offset block, never a soft ring. */
   :focus-visible {
-    outline: 3px solid var(--green-deep);
-    outline-offset: 3px;
-    border-radius: 6px;
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+    border-radius: 0;
   }
 
   ::selection {
     background: var(--squib-green);
-    color: #fff;
+    color: var(--ink);
+  }
+
+  /* Headings sit tight — slab faces need less air than a grotesk. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -64,28 +77,39 @@
 }
 
 @layer components {
-  /* The one grain/paper cue that ties the UI to the studio photography. */
+  /* Heavier grain, for panels that should read as a different paper stock. */
   .studio-grain::before {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.5;
+    opacity: 0.55;
     background-image: radial-gradient(
       circle at 1px 1px,
-      rgba(38, 32, 25, 0.06) 1px,
+      rgba(23, 21, 15, 0.08) 1px,
       transparent 0
     );
-    background-size: 6px 6px;
+    background-size: 5px 5px;
   }
 
-  .hairline {
-    border: 1px solid var(--hairline);
+  /* Small caps label. Used for eyebrows and field labels — the printed
+     caption voice, always mono, always wide. */
+  .stamp {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* The double rule under section headers — a press convention. */
+  .rule-double {
+    border-bottom: 2px solid var(--ink);
+    box-shadow: 0 4px 0 -2px var(--ink);
   }
 }
 
 @layer utilities {
-  /* mono = "the counted, on-chain stuff". Used nowhere else. */
   .tabular {
     font-variant-numeric: tabular-nums;
   }

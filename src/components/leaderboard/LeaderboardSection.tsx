@@ -22,7 +22,7 @@ export default function LeaderboardSection() {
   return (
     <div className="space-y-8 sm:space-y-10">
       <Reveal>
-        <div className="flex flex-wrap items-center justify-between gap-6 rounded-card border border-hairline bg-surface p-5 shadow-card sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-6 rounded-card border-2 border-hairline bg-surface p-5 shadow-card sm:p-6">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-squib-deep">
               Snapshot in
@@ -61,7 +61,7 @@ export default function LeaderboardSection() {
       {/* INTEGRATION: sybil filtering — enforced server-side; this copy exists
           so the rules are public before the snapshot. */}
       <Reveal>
-        <div className="rounded-card border border-hairline bg-surface p-5 shadow-card sm:p-6">
+        <div className="rounded-card border-2 border-hairline bg-surface p-5 shadow-card sm:p-6">
           <h2 className="font-display text-base font-semibold tracking-tight">
             How we keep this from being farmed
           </h2>

@@ -36,7 +36,7 @@ export default function HomePage() {
       <Hero />
       <FeaturedSquibs />
 
-      <section className="border-t border-hairline py-20 sm:py-28">
+      <section className="border-t-2 border-hairline py-20 sm:py-28">
         <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
           <Reveal>
             <h2 className="max-w-2xl font-display text-3xl font-semibold leading-[1.04] tracking-tightest text-balance sm:text-5xl">
@@ -47,7 +47,7 @@ export default function HomePage() {
           <ol className="mt-10 grid gap-4 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <Reveal as="li" key={s.n} delay={i * 0.06}>
-                <div className="flex h-full flex-col rounded-card border border-hairline bg-surface p-6 shadow-card">
+                <div className="flex h-full flex-col rounded-card border-2 border-hairline bg-surface p-6 shadow-card">
                   <span className="font-mono text-xs font-bold text-ink/30">{s.n}</span>
                   <h3 className="mt-3 font-display text-xl font-semibold tracking-tight">
                     {s.title}
@@ -67,7 +67,7 @@ export default function HomePage() {
           </ol>
 
           <Reveal>
-            <div className="mt-12 flex flex-wrap items-center justify-between gap-6 rounded-vault border border-hairline bg-squib-wash p-7 sm:p-10">
+            <div className="mt-12 flex flex-wrap items-center justify-between gap-6 rounded-vault border-2 border-hairline bg-squib-wash p-7 sm:p-10">
               <div className="max-w-md">
                 <h3 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
                   Nobody who finishes the tasks leaves empty-handed.

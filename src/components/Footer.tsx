@@ -17,7 +17,7 @@ const PAGES = [...NAV_LINKS, { label: "FAQ", href: "/faq" }];
 
 export default function Footer() {
   return (
-    <footer className="border-t border-hairline">
+    <footer className="border-t-2 border-hairline">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Wordmark />
@@ -72,7 +72,7 @@ export default function Footer() {
             </li>
             <li>
               <span className="inline-flex items-center gap-2 text-sm text-ink/60">
-                <span className="h-1.5 w-1.5 rounded-full bg-squib" aria-hidden />
+                <span className="h-1.5 w-1.5 rounded-none bg-squib" aria-hidden />
                 {CHAIN}
               </span>
             </li>
@@ -80,7 +80,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-hairline">
+      <div className="border-t-2 border-hairline">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-6 text-xs text-ink/40 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p>
             © {new Date().getFullYear()} {COLLECTION_NAME}. Working name, subject

@@ -55,14 +55,14 @@ const QA: { q: string; a: string }[] = [
 export default function Faq() {
   return (
     <Reveal>
-      <div className="mx-auto max-w-2xl divide-y divide-hairline overflow-hidden rounded-card border border-hairline bg-surface shadow-card">
+      <div className="mx-auto max-w-2xl divide-y-2 divide-hairline overflow-hidden rounded-card border-2 border-hairline bg-surface shadow-card">
         {QA.map((item) => (
           <details key={item.q} className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[15px] font-medium transition hover:bg-ink/[0.02] sm:px-6">
               {item.q}
               <span
                 aria-hidden
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-hairline text-ink/50 transition group-open:rotate-45 group-open:border-squib group-open:bg-squib group-open:text-white"
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-none border-2 border-hairline text-ink/50 transition group-open:rotate-45 group-open:border-squib group-open:bg-squib group-open:text-ink"
               >
                 <svg viewBox="0 0 12 12" className="h-3 w-3">
                   <path

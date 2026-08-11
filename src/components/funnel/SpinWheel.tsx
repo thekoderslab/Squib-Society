@@ -58,7 +58,7 @@ export default function SpinWheel() {
   }
 
   return (
-    <div className="rounded-squib border border-hairline bg-cream p-5">
+    <div className="rounded-squib border-2 border-hairline bg-cream p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h4 className="font-display text-base font-semibold tracking-tight">
@@ -68,7 +68,7 @@ export default function SpinWheel() {
             You already have your allowlist spot. This only adds to it.
           </p>
         </div>
-        <span className="shrink-0 rounded-full border border-hairline bg-surface px-2.5 py-1 font-mono text-[11px] text-ink/60">
+        <span className="shrink-0 rounded-none border-2 border-hairline bg-surface px-2.5 py-1 font-mono text-[11px] text-ink/60">
           {(GTD_SPIN_ODDS * 100).toFixed(1)}%
         </span>
       </div>

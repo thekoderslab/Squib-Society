@@ -65,7 +65,7 @@ export default async function SquibPage({ params }: { params: Promise<Params> })
 
       <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-14">
         <Reveal>
-          <div className="overflow-hidden rounded-vault border border-hairline bg-surface shadow-lift">
+          <div className="overflow-hidden rounded-vault border-2 border-hairline bg-surface shadow-lift">
             <SquibPhoto
               squib={squib}
               priority
@@ -91,7 +91,7 @@ export default async function SquibPage({ params }: { params: Promise<Params> })
               {squib.bio}
             </p>
 
-            <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-hairline bg-hairline">
+            <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-card border-2 border-hairline bg-hairline">
               <div className="bg-surface px-4 py-3.5">
                 <dt className="text-xs text-ink/50">Token</dt>
                 <dd className="mt-1 font-mono text-sm font-bold tabular">
@@ -132,12 +132,12 @@ export default async function SquibPage({ params }: { params: Promise<Params> })
       {/* prev / next through the revealed set */}
       <nav
         aria-label="More squibs"
-        className="mt-16 grid gap-3 border-t border-hairline pt-8 sm:grid-cols-2"
+        className="mt-16 grid gap-3 border-t-2 border-hairline pt-8 sm:grid-cols-2"
       >
         {prev ? (
           <Link
             href={`/squib/${pad(prev.id)}`}
-            className="group flex items-center gap-4 rounded-card border border-hairline bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift"
+            className="group flex items-center gap-4 rounded-card border-2 border-hairline bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift"
           >
             <SquibPhoto
               squib={prev}
@@ -158,7 +158,7 @@ export default async function SquibPage({ params }: { params: Promise<Params> })
         {next ? (
           <Link
             href={`/squib/${pad(next.id)}`}
-            className="group flex items-center gap-4 rounded-card border border-hairline bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift sm:flex-row-reverse sm:text-right"
+            className="group flex items-center gap-4 rounded-card border-2 border-hairline bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift sm:flex-row-reverse sm:text-right"
           >
             <SquibPhoto
               squib={next}

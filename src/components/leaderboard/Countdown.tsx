@@ -37,7 +37,7 @@ export default function Countdown() {
     <div className="flex items-center gap-2 sm:gap-3">
       {UNITS.map((u) => (
         <div key={u.key} className="text-center">
-          <div className="min-w-[3rem] rounded-squib border border-hairline bg-cream px-2.5 py-2 font-mono text-xl font-bold tabular sm:text-2xl">
+          <div className="min-w-[3rem] rounded-squib border-2 border-hairline bg-cream px-2.5 py-2 font-mono text-xl font-bold tabular sm:text-2xl">
             {left ? String(left[u.key]).padStart(2, "0") : "––"}
           </div>
           <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/40">

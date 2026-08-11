@@ -65,7 +65,7 @@ export default function VaultGrid() {
       {tip ? (
         <div
           role="presentation"
-          className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-full rounded-full border border-hairline bg-ink px-3 py-1.5 text-xs font-medium text-cream shadow-lift"
+          className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-full rounded-none border-2 border-hairline bg-ink px-3 py-1.5 text-xs font-medium text-cream shadow-lift"
           style={{ left: tip.x, top: tip.y - 8 }}
         >
           Locked — reveal soon
@@ -80,7 +80,7 @@ const LockedTile = memo(function LockedTile() {
     <li
       data-locked
       aria-hidden
-      className="group relative aspect-square overflow-hidden rounded-lg bg-locked/70 ring-1 ring-inset ring-hairline transition-colors duration-200 hover:bg-locked sm:rounded-xl"
+      className="group relative aspect-square overflow-hidden rounded-none bg-locked/70 ring-1 ring-inset ring-ink/25 transition-colors duration-200 hover:bg-locked sm:rounded-none"
     >
       <LockedSquib className="absolute inset-[14%] h-auto w-[72%] text-ink/[0.13] transition-transform group-hover:animate-shiver" />
       <span
@@ -98,7 +98,7 @@ const RevealedTile = memo(function RevealedTile({ squib }: { squib: Squib }) {
     <li className="relative aspect-square">
       <Link
         href={`/squib/${String(squib.id).padStart(4, "0")}`}
-        className="group relative block h-full w-full overflow-hidden rounded-lg border border-hairline bg-surface shadow-card outline-offset-2 transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:rotate-[-2.5deg] hover:shadow-lift sm:rounded-xl"
+        className="group relative block h-full w-full overflow-hidden rounded-none border-2 border-hairline bg-surface shadow-card outline-offset-2 transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:rotate-[-2.5deg] hover:shadow-lift sm:rounded-none"
       >
         <span className="sr-only">
           {squib.name}, the {squib.role.toLowerCase()}

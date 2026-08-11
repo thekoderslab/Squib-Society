@@ -16,34 +16,27 @@ import Reveal from "./ui/Reveal";
 const LEAD = getSquibById(9)!; // Mage, the skater — the most legible silhouette
 const SECOND = getSquibById(369)!; // Skullknit, for contrast
 
+const pad = (id: number) => String(id).padStart(4, "0");
+
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      {/* studio light: one soft warm pool, no gradient wash */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-32 mx-auto h-[620px] max-w-4xl rounded-full opacity-80 blur-3xl"
-        style={{
-          background:
-            "radial-gradient(closest-side, rgba(255,255,255,0.95), rgba(244,239,230,0))",
-        }}
-      />
-
-      <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-5 pb-16 pt-12 sm:px-8 sm:pb-24 sm:pt-16 lg:grid-cols-[1.02fr_1fr] lg:items-center lg:gap-10">
-        <Reveal>
+    <section className="border-b-2 border-hairline">
+      <div className="mx-auto grid w-full max-w-6xl gap-0 px-0 lg:grid-cols-[1.05fr_1fr]">
+        {/* left column: the type */}
+        <Reveal className="border-hairline px-5 py-12 sm:px-8 sm:py-16 lg:border-r-2">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs text-ink/65 shadow-card">
-              <span className="h-1.5 w-1.5 rounded-full bg-squib" aria-hidden />
-              Allowlist is open
+            <p className="inline-flex items-center gap-2 border-2 border-hairline bg-squib px-2.5 py-1 stamp text-ink">
+              <span className="h-1.5 w-1.5 bg-ink" aria-hidden />
+              Allowlist open
             </p>
 
-            <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.94] tracking-tightest text-balance sm:text-[4.25rem] lg:text-[4.75rem]">
+            <h1 className="mt-6 font-display text-[2.9rem] font-bold leading-[0.9] tracking-tightest text-balance sm:text-[4.5rem]">
               {TOTAL_SUPPLY} tiny old gods
               <br />
               took up hobbies.
             </h1>
 
-            <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-ink/70 text-pretty">
+            <p className="mt-6 max-w-lg border-l-4 border-hairline pl-4 text-[16px] leading-relaxed text-ink/70 text-pretty">
               Squibs are ancient things from the deep dark who now skate, cook,
               shoot longbows and stand around marinas in a good cardigan. A
               collection of {TOTAL_SUPPLY} designer toys, minting on {MINT_VENUE},
@@ -59,70 +52,67 @@ export default function Hero() {
               </LinkButton>
             </div>
 
-            <dl className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-hairline pt-6 text-sm">
-              <div className="flex items-baseline gap-2">
-                <dt className="text-ink/50">Chain</dt>
-                <dd className="font-medium">
-                  {CHAIN}{" "}
-                  <span className="font-mono text-[11px] text-ink/45">
+            {/* spec block — reads like a printed data table */}
+            <dl className="mt-10 grid grid-cols-3 gap-px border-2 border-hairline bg-hairline">
+              <div className="bg-surface px-3 py-3">
+                <dt className="stamp text-ink/50">Chain</dt>
+                <dd className="mt-1.5 text-sm font-medium leading-tight">
+                  {CHAIN}
+                  <span className="mt-0.5 block font-mono text-[10px] text-ink/45">
                     {CHAIN_SUBTITLE}
                   </span>
                 </dd>
               </div>
-              <div className="flex items-baseline gap-2">
-                <dt className="text-ink/50">Mint</dt>
-                <dd className="font-medium">{MINT_VENUE}</dd>
+              <div className="bg-surface px-3 py-3">
+                <dt className="stamp text-ink/50">Mint</dt>
+                <dd className="mt-1.5 text-sm font-medium">{MINT_VENUE}</dd>
               </div>
-              <div className="flex items-baseline gap-2">
-                <dt className="text-ink/50">Guaranteed spots</dt>
-                <dd className="font-mono font-medium tabular">{WL_WINNERS}</dd>
+              <div className="bg-surface px-3 py-3">
+                <dt className="stamp text-ink/50">GTD spots</dt>
+                <dd className="mt-1.5 font-mono text-sm font-bold tabular">
+                  {WL_WINNERS}
+                </dd>
               </div>
             </dl>
           </div>
         </Reveal>
 
-        <Reveal delay={0.12}>
-          <div className="relative">
-            <Link
-              href={`/squib/${String(LEAD.id).padStart(4, "0")}`}
-              className="group relative block overflow-hidden rounded-vault border border-hairline bg-surface shadow-lift"
-            >
+        {/* right column: the toy, in a ruled frame */}
+        <Reveal delay={0.1} className="relative border-t-2 border-hairline lg:border-t-0">
+          <div className="relative h-full bg-surface">
+            <Link href={`/squib/${pad(LEAD.id)}`} className="group block">
               <SquibPhoto
                 squib={LEAD}
                 priority
-                sizes="(max-width: 1024px) 92vw, 520px"
-                className="h-auto w-full transition-transform duration-700 group-hover:scale-[1.03]"
+                sizes="(max-width: 1024px) 100vw, 560px"
+                className="h-auto w-full"
               />
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-surface via-surface/80 to-transparent px-5 pb-4 pt-14">
+              <span className="flex items-center justify-between gap-3 border-t-2 border-hairline px-5 py-3">
                 <span>
-                  <span className="block font-display text-lg font-semibold tracking-tight">
+                  <span className="block font-display text-lg font-bold leading-tight">
                     {LEAD.name}
                   </span>
                   <span className="block text-sm text-ink/55">{LEAD.role}</span>
                 </span>
-                <span className="font-mono text-xs text-ink/45">
-                  #{String(LEAD.id).padStart(4, "0")}
+                <span className="border-2 border-hairline bg-cream px-2 py-1 font-mono text-[11px] font-bold tabular">
+                  #{pad(LEAD.id)}
                 </span>
               </span>
             </Link>
 
-            {/* second toy, tucked at the corner like a shelf neighbour */}
+            {/* shelf neighbour, overlapping the frame edge */}
             <Link
-              href={`/squib/${String(SECOND.id).padStart(4, "0")}`}
-              className="group absolute -bottom-6 -left-4 hidden w-36 overflow-hidden rounded-card border border-hairline bg-surface shadow-lift sm:block lg:-left-10 lg:w-44"
+              href={`/squib/${pad(SECOND.id)}`}
+              className="group absolute -left-5 bottom-24 hidden w-32 border-2 border-hairline bg-surface shadow-lift transition-transform hover:-translate-x-[2px] hover:-translate-y-[2px] lg:block"
             >
-              <SquibPhoto
-                squib={SECOND}
-                sizes="180px"
-                className="h-auto w-full transition-transform duration-500 group-hover:scale-[1.05]"
-              />
-              <span className="block px-3 pb-2 pt-1 font-mono text-[10px] text-ink/45">
-                #{String(SECOND.id).padStart(4, "0")} {SECOND.name}
+              <SquibPhoto squib={SECOND} sizes="140px" className="h-auto w-full" />
+              <span className="block border-t-2 border-hairline px-2 py-1 font-mono text-[10px] font-bold">
+                #{pad(SECOND.id)}
               </span>
             </Link>
 
             <PeekingSquib
-              className="-right-3 bottom-10 z-[-1] h-28 w-28 sm:h-36 sm:w-36"
+              className="-right-2 bottom-16 z-[-1] h-24 w-24 sm:h-32 sm:w-32"
               period={17}
               delay={6}
             />

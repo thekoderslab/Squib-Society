@@ -59,10 +59,10 @@ export default function Roadmap() {
       {PHASES.map((p, i) => (
         <Reveal as="li" key={p.n} delay={i * 0.06} className="relative pl-11 md:pl-0">
           <span
-            className={`absolute left-0 top-0 grid h-8 w-8 place-items-center rounded-full font-mono text-[11px] font-bold md:relative ${
+            className={`absolute left-0 top-0 grid h-8 w-8 place-items-center rounded-none font-mono text-[11px] font-bold md:relative ${
               p.status === "now"
-                ? "bg-squib text-white shadow-green"
-                : "border border-hairline bg-surface text-ink/55"
+                ? "bg-squib text-ink shadow-card"
+                : "border-2 border-hairline bg-surface text-ink/55"
             }`}
           >
             {p.n}
