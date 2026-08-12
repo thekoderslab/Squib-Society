@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Mono } from "next/font/google";
 
 import Footer from "@/components/Footer";
+import SquibCursor from "@/components/SquibCursor";
 import TopNav from "@/components/TopNav";
 import {
   CHAIN,
@@ -74,6 +75,9 @@ export default function RootLayout({
         >
           Skip to content
         </a>
+        {/* Site-wide squib pointer and click burst. Renders no layout element,
+            so it can sit here without disturbing the flex column. */}
+        <SquibCursor />
         <ProgressProvider>
           <TopNav />
           <main id="main" className="flex-1">

@@ -108,6 +108,14 @@
     box-shadow: 0 4px 0 -2px var(--ink);
   }
 
+  /* Set by <SquibCursor> only when it is actually running: a fine pointer with
+     motion allowed. Text fields keep their caret, because losing it is a real
+     cost and a squib head is not a substitute for knowing where you are typing. */
+  .squib-cursor-on,
+  .squib-cursor-on *:not(input):not(textarea):not(select) {
+    cursor: none !important;
+  }
+
   /* Squibs thrown out from a click: scatter, blur, gone. */
   .squib-splat {
     animation: squib-splat 700ms cubic-bezier(0.15, 0.7, 0.3, 1) forwards;

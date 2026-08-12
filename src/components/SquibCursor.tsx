@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { LOGO } from "@/lib/constants";
 
@@ -8,29 +8,34 @@ type Splat = { id: number; x: number; y: number; dx: number; dy: number; r: numb
 
 let nextId = 0;
 
+/** Fields keep their own cursor, otherwise you lose the text caret. */
+const FIELD = "input, textarea, select, [contenteditable='true']";
+/** What a click has to land on to throw squibs. */
+const HITTABLE = "a, button, [role='button'], summary";
+
 /**
- * Wraps a section and does two things inside it:
- *   1. swaps the pointer for a small squib head
- *   2. throws a handful of squibs out from wherever you click, which blur and
- *      fade as they scatter
+ * Site-wide squib cursor.
  *
- * Only on real pointers. Touch devices keep their normal behaviour, and the
- * whole thing turns itself off under prefers-reduced-motion, since a cursor
- * that trails and bursts is exactly what that setting exists to stop.
+ * Rendered once in the root layout. It listens on `document` rather than
+ * wrapping the tree, so it adds no element to the layout and cannot disturb the
+ * page's flex column. Two behaviours:
+ *
+ *   1. the pointer becomes a small squib head
+ *   2. clicking a link or button throws a handful of squibs out from the click,
+ *      which scatter, blur and vanish
+ *
+ * Off entirely on touch devices and under prefers-reduced-motion. Hiding the
+ * system cursor is a real cost for anyone who relies on it, so those two escape
+ * hatches are not optional.
  */
-export default function SquibCursor({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export default function SquibCursor() {
   const [active, setActive] = useState(false);
-  const [inside, setInside] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [splats, setSplats] = useState<Splat[]>([]);
   const dot = useRef<HTMLDivElement>(null);
   const frame = useRef<number | null>(null);
 
+  // Decide once whether this pointer should get the treatment at all.
   useEffect(() => {
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -44,30 +49,42 @@ export default function SquibCursor({
     };
   }, []);
 
-  /** Position is written straight to the node, never through state. */
-  const onMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!active) return;
-      const { clientX, clientY } = e;
+  // Hide the system cursor only while ours is actually running.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (active) root.classList.add("squib-cursor-on");
+    else root.classList.remove("squib-cursor-on");
+    return () => root.classList.remove("squib-cursor-on");
+  }, [active]);
+
+  useEffect(() => {
+    if (!active) return;
+
+    function onMove(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+      // Over a text field, stand down and let the caret through.
+      setVisible(!target?.closest?.(FIELD));
+
       if (frame.current) return;
       frame.current = requestAnimationFrame(() => {
         frame.current = null;
         if (dot.current) {
-          dot.current.style.transform = `translate3d(${clientX - 16}px, ${clientY - 16}px, 0)`;
+          dot.current.style.transform = `translate3d(${e.clientX - 16}px, ${
+            e.clientY - 16
+          }px, 0)`;
         }
       });
-    },
-    [active],
-  );
+    }
 
-  const burst = useCallback(
-    (e: React.MouseEvent) => {
-      if (!active) return;
-      const target = e.target as HTMLElement;
-      if (!target.closest("a, button")) return;
+    function onLeave() {
+      setVisible(false);
+    }
 
-      const x = e.clientX;
-      const y = e.clientY;
+    function onClick(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest?.(HITTABLE)) return;
+
+      const { clientX: x, clientY: y } = e;
       const made: Splat[] = Array.from({ length: 9 }, () => {
         const angle = Math.random() * Math.PI * 2;
         const dist = 70 + Math.random() * 130;
@@ -83,47 +100,43 @@ export default function SquibCursor({
 
       setSplats((s) => [...s, ...made]);
       const ids = new Set(made.map((m) => m.id));
-      window.setTimeout(() => {
-        setSplats((s) => s.filter((p) => !ids.has(p.id)));
-      }, 750);
-    },
-    [active],
-  );
+      window.setTimeout(() => setSplats((s) => s.filter((p) => !ids.has(p.id))), 750);
+    }
 
-  useEffect(() => {
+    document.addEventListener("mousemove", onMove, { passive: true });
+    document.addEventListener("mouseleave", onLeave);
+    document.addEventListener("click", onClick, true);
+
     return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseleave", onLeave);
+      document.removeEventListener("click", onClick, true);
       if (frame.current) cancelAnimationFrame(frame.current);
     };
-  }, []);
+  }, [active]);
+
+  if (!active) return null;
 
   return (
-    <div
-      className={`${className} ${active && inside ? "cursor-none" : ""}`}
-      onMouseMove={onMove}
-      onMouseEnter={() => setInside(true)}
-      onMouseLeave={() => setInside(false)}
-      onClick={burst}
-    >
-      {children}
-
-      {active && inside ? (
-        <div
-          ref={dot}
-          aria-hidden
-          className="pointer-events-none fixed left-0 top-0 z-[70] h-8 w-8 will-change-transform"
-          style={{
-            backgroundImage: `url(${LOGO.mark})`,
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-          }}
-        />
-      ) : null}
+    <>
+      <div
+        ref={dot}
+        aria-hidden
+        className={`pointer-events-none fixed left-0 top-0 z-[200] h-8 w-8 will-change-transform ${
+          visible ? "" : "opacity-0"
+        }`}
+        style={{
+          backgroundImage: `url(${LOGO.mark})`,
+          backgroundSize: "contain",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
 
       {splats.map((p) => (
         <span
           key={p.id}
           aria-hidden
-          className="squib-splat pointer-events-none fixed z-[69]"
+          className="squib-splat pointer-events-none fixed z-[199]"
           style={
             {
               left: p.x,
@@ -141,6 +154,6 @@ export default function SquibCursor({
           }
         />
       ))}
-    </div>
+    </>
   );
 }

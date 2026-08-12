@@ -1,12 +1,11 @@
 import { MINT_VENUE, TOTAL_SUPPLY } from "@/lib/constants";
-import SquibCursor from "./SquibCursor";
 import SquibSlider from "./SquibSlider";
 import { LinkButton } from "./ui/Button";
 import Reveal from "./ui/Reveal";
 
 export default function Hero() {
   return (
-    <SquibCursor className="relative border-b-2 border-hairline">
+    <section className="relative border-b-2 border-hairline">
       <div className="mx-auto grid w-full max-w-6xl gap-0 px-0 lg:grid-cols-[1.05fr_1fr]">
         <Reveal className="border-hairline px-5 py-12 sm:px-8 sm:py-16 lg:border-r-2">
           <div>
@@ -45,6 +44,6 @@ export default function Hero() {
           <SquibSlider />
         </Reveal>
       </div>
-    </SquibCursor>
+    </section>
   );
 }
