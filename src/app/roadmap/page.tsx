@@ -6,16 +6,16 @@ import PageHeader from "@/components/ui/PageHeader";
 export const metadata: Metadata = {
   title: "Roadmap",
   description:
-    "Five phases from allowlist to series two. Short, honest, and updated on the page rather than quietly edited.",
+    "Community first, then the allowlist, then the mint. There may never be a public round.",
 };
 
 export default function RoadmapPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Roadmap"
-        title="Five phases. No treasure map."
-        intro="Short and honest. If something here slips, we will say so on the timeline rather than quietly editing this page."
+        eyebrow="The plan"
+        title="Community first. Everything else after that."
+        intro="Five things, in the order they actually happen. If a date moves we will say so here rather than quietly changing the page and hoping nobody kept a screenshot."
       />
       <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
         <Roadmap />

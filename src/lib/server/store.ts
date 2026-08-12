@@ -75,7 +75,7 @@ export async function getProfile(id: string): Promise<ProfileRow | null> {
 export async function getUserState(profileId: string): Promise<UserProgress> {
   const db = admin();
 
-  const [profileRes, entryRes, streakRes, ledgerRes] = await Promise.all([
+  const [profileRes, entryRes, streakRes, ledgerRes, spinRes] = await Promise.all([
     db
       .from("profiles")
       .select("handle, display_name")
@@ -95,12 +95,22 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
       .from("points_ledger")
       .select("kind, points, day, meta")
       .eq("profile_id", profileId),
+    // Most recent spin, for the 24 hour cooldown clock.
+    db
+      .from("points_ledger")
+      .select("created_at")
+      .eq("profile_id", profileId)
+      .eq("kind", "spin")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (profileRes.error) fail("getUserState/profile", profileRes.error);
   if (entryRes.error) fail("getUserState/entry", entryRes.error);
   if (streakRes.error) fail("getUserState/streak", streakRes.error);
   if (ledgerRes.error) fail("getUserState/ledger", ledgerRes.error);
+  if (spinRes.error) fail("getUserState/spin", spinRes.error);
 
   const profile = profileRes.data as { handle: string; display_name: string | null } | null;
   const entry = entryRes.data as
@@ -119,6 +129,10 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
       .pop() ?? null;
 
   const hasKind = (kind: string) => ledger.some((r) => r.kind === kind);
+
+  const lastSpinAt = spinRes.data
+    ? (spinRes.data as { created_at: string }).created_at
+    : null;
 
   const gameBest = ledger
     .filter((r) => r.kind === "game")
@@ -140,13 +154,10 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
     },
     evmAddress: entry?.evm_address ?? null,
     allowlisted: !!entry,
-    gtd: entry?.gtd ?? false,
-    spinUsed: entry?.spin_used ?? false,
     points: ledger.reduce((sum, r) => sum + r.points, 0),
+    // Streak here is "spins taken", which is what the flame on the board means.
     streak: streak?.current_streak ?? 0,
-    lastCheckIn: streak?.last_check_in ?? null,
-    questDoneOn: latestDay("quest"),
-    triviaDoneOn: latestDay("trivia"),
+    lastSpinAt: lastSpinAt ?? null,
     gamePlayedOn: latestDay("game"),
     gameBest,
   };
@@ -170,7 +181,7 @@ export async function awardTask(profileId: string, task: TaskId): Promise<number
 
 export async function awardDaily(
   profileId: string,
-  kind: "quest" | "trivia" | "game" | "share",
+  kind: "game" | "share",
   points: number,
   day: string | null,
   meta: Record<string, unknown> = {},
@@ -187,25 +198,29 @@ export async function awardDaily(
   return readAwarded(data);
 }
 
-export async function checkIn(
+/**
+ * One spin every 24 hours. The cooldown is checked and the row written inside
+ * one locking transaction, so a client that fires the request twice gets one
+ * spin and one refusal, never two prizes.
+ */
+export async function dailySpin(
   profileId: string,
-  day: string,
-): Promise<{ awarded: number; streak: number; alreadyDone: boolean }> {
+  points: number,
+  cooldownHours: number,
+): Promise<{ applied: boolean; awarded: number; nextAt: string | null }> {
   const db = admin();
-  const { data, error } = await db.rpc("check_in", {
+  const { data, error } = await db.rpc("daily_spin", {
     p_profile: profileId,
-    p_day: day,
-    p_base: POINTS.checkIn,
-    p_bonus_per_day: POINTS.streakBonusPerDay,
-    p_bonus_cap: POINTS.streakBonusCap,
+    p_points: points,
+    p_cooldown_hours: cooldownHours,
   });
-  if (error) fail("checkIn", error);
+  if (error) fail("dailySpin", error);
 
   const row = Array.isArray(data) ? data[0] : data;
   return {
+    applied: Boolean(row?.applied),
     awarded: Number(row?.awarded ?? 0),
-    streak: Number(row?.streak ?? 0),
-    alreadyDone: Boolean(row?.already_done),
+    nextAt: (row?.next_at as string | null) ?? null,
   };
 }
 
@@ -266,27 +281,7 @@ export async function getRank(
   return { points, rank: (count ?? 0) + 1 };
 }
 
-/* ── spin ───────────────────────────────────────────────────────────────── */
-
-export async function recordSpin(
-  profileId: string,
-  upgraded: boolean,
-): Promise<{ applied: boolean; gtd: boolean }> {
-  const db = admin();
-  const { data, error } = await db.rpc("use_spin", {
-    p_profile: profileId,
-    p_upgraded: upgraded,
-  });
-  if (error) fail("recordSpin", error);
-
-  const row = Array.isArray(data) ? data[0] : data;
-  return {
-    applied: Boolean(row?.applied),
-    gtd: Boolean(row?.gtd),
-  };
-}
-
-/* ── leaderboard + reveal ───────────────────────────────────────────────── */
+/* ── leaderboard ────────────────────────────────────────────────────────── */
 
 export async function getLeaderboardRows(limit = 50): Promise<LeaderboardEntry[]> {
   const db = admin();

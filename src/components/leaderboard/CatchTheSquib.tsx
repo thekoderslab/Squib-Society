@@ -118,7 +118,7 @@ export default function CatchTheSquib() {
             type="button"
             onClick={() => hit(i)}
             disabled={phase !== "playing"}
-            aria-label={active === i ? "Squib is up — catch it" : "Empty hole"}
+            aria-label={active === i ? "Squib is up, catch it" : "Empty hole"}
             className="relative aspect-square overflow-hidden rounded-squib border-2 border-hairline bg-cream disabled:cursor-default"
           >
             {active === i ? (

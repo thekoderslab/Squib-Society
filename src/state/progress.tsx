@@ -12,7 +12,7 @@ import {
 
 import { fetchMe } from "@/lib/api";
 import { POINTS, STORAGE_KEY } from "@/lib/constants";
-import { daysBetween, localDayKey } from "@/lib/dates";
+import { localDayKey } from "@/lib/dates";
 import type { TaskId, TaskStatus, UserProgress, XAccount } from "@/lib/types";
 
 const EMPTY: UserProgress = {
@@ -20,22 +20,18 @@ const EMPTY: UserProgress = {
   tasks: { follow: "pending", like: "pending", retweet: "pending", quote: "pending" },
   evmAddress: null,
   allowlisted: false,
-  gtd: false,
-  spinUsed: false,
   points: 0,
   streak: 0,
-  lastCheckIn: null,
-  questDoneOn: null,
-  triviaDoneOn: null,
+  lastSpinAt: null,
   gamePlayedOn: null,
   gameBest: 0,
 };
 
 type Ctx = {
-  /** False during the first client render — render neutral placeholders until true. */
+  /** False during the first client render. Render neutral placeholders until true. */
   hydrated: boolean;
   /**
-   * "server" once Supabase has answered — the ledger is then authoritative and
+   * "server" once Supabase has answered. The ledger is then authoritative and
    * nothing is written to localStorage. "local" is the zero-config fallback.
    */
   mode: "local" | "server";
@@ -46,11 +42,7 @@ type Ctx = {
   setTask: (id: TaskId, status: TaskStatus) => void;
   setEvmAddress: (address: string) => void;
   markAllowlisted: () => void;
-  recordSpin: (upgraded: boolean) => void;
-  /** Returns the points awarded, or 0 if already checked in today. */
-  doCheckIn: () => number;
-  completeQuest: () => void;
-  completeTrivia: (correct: boolean) => void;
+  recordSpin: (points: number) => void;
   recordGame: (score: number) => number;
   reset: () => void;
   baseTasksDone: boolean;
@@ -79,8 +71,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     let live = true;
 
     // Paint from localStorage first so the UI is never blank, then ask the
-    // server. If Supabase is configured its answer wins outright — a stale
-    // local copy must never be able to inflate a points total.
+    // server. If Supabase is configured its answer wins outright, because a
+    // stale local copy must never be able to inflate a points total.
     setProgress(load());
     setHydrated(true);
 
@@ -104,32 +96,28 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     } catch {
-      /* private mode — the session just won't persist */
+      /* private mode, the session just will not persist */
     }
   }, [progress, hydrated, mode]);
-
-  const applyServerProgress = useCallback((p: UserProgress) => {
-    setMode("server");
-    setProgress(p);
-  }, []);
 
   const patch = useCallback(
     (fn: (p: UserProgress) => UserProgress) => setProgress((p) => fn(p)),
     [],
   );
 
-  const setX = useCallback(
-    (x: XAccount | null) => patch((p) => ({ ...p, x })),
-    [patch],
-  );
+  const applyServerProgress = useCallback((p: UserProgress) => {
+    setMode("server");
+    setProgress(p);
+  }, []);
+
+  const setX = useCallback((x: XAccount | null) => patch((p) => ({ ...p, x })), [patch]);
 
   const setTask = useCallback(
     (id: TaskId, status: TaskStatus) =>
       patch((p) => {
         if (p.tasks[id] === status) return p;
         const wasDone = p.tasks[id] === "done";
-        const nowDone = status === "done";
-        const delta = !wasDone && nowDone ? POINTS[id] : 0;
+        const delta = !wasDone && status === "done" ? POINTS[id] : 0;
         return {
           ...p,
           tasks: { ...p.tasks, [id]: status },
@@ -150,59 +138,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   );
 
   const recordSpin = useCallback(
-    (upgraded: boolean) =>
-      patch((p) => ({ ...p, spinUsed: true, gtd: p.gtd || upgraded })),
-    [patch],
-  );
-
-  /**
-   * Check-in is the workhorse of the retention loop: base points plus a
-   * per-day streak bonus, and a miss resets the streak to 1.
-   */
-  const doCheckIn = useCallback((): number => {
-    const today = localDayKey();
-    if (progress.lastCheckIn === today) return 0;
-
-    // Computed out here, not inside the updater: state updaters must stay pure
-    // (React re-invokes them), and the caller needs the number to display.
-    const gap = daysBetween(progress.lastCheckIn, today);
-    const streak = gap === 1 ? progress.streak + 1 : 1;
-    const bonus = Math.min(
-      (streak - 1) * POINTS.streakBonusPerDay,
-      POINTS.streakBonusCap,
-    );
-    const awarded = POINTS.checkIn + bonus;
-
-    patch((p) =>
-      p.lastCheckIn === today
-        ? p
-        : { ...p, lastCheckIn: today, streak, points: p.points + awarded },
-    );
-    return awarded;
-  }, [patch, progress.lastCheckIn, progress.streak]);
-
-  const completeQuest = useCallback(() => {
-    const today = localDayKey();
-    patch((p) =>
-      p.questDoneOn === today
-        ? p
-        : { ...p, questDoneOn: today, points: p.points + POINTS.dailyQuest },
-    );
-  }, [patch]);
-
-  const completeTrivia = useCallback(
-    (correct: boolean) => {
-      const today = localDayKey();
-      patch((p) =>
-        p.triviaDoneOn === today
-          ? p
-          : {
-              ...p,
-              triviaDoneOn: today,
-              points: p.points + (correct ? POINTS.trivia : 0),
-            },
-      );
-    },
+    (points: number) =>
+      patch((p) => ({
+        ...p,
+        lastSpinAt: new Date().toISOString(),
+        streak: p.streak + 1,
+        points: p.points + points,
+      })),
     [patch],
   );
 
@@ -244,9 +186,6 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setEvmAddress,
       markAllowlisted,
       recordSpin,
-      doCheckIn,
-      completeQuest,
-      completeTrivia,
       recordGame,
       reset,
       baseTasksDone,
@@ -261,18 +200,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setEvmAddress,
       markAllowlisted,
       recordSpin,
-      doCheckIn,
-      completeQuest,
-      completeTrivia,
       recordGame,
       reset,
       baseTasksDone,
     ],
   );
 
-  return (
-    <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>
-  );
+  return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
 }
 
 export function useProgress(): Ctx {

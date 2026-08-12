@@ -10,7 +10,7 @@ import {
   submitAllowlist,
   verifyTask,
 } from "@/lib/api";
-import { EVM_ADDRESS_RE, POINTS, WL_WINNERS } from "@/lib/constants";
+import { EVM_ADDRESS_RE, POINTS } from "@/lib/constants";
 import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Avatar from "../art/Avatar";
@@ -70,7 +70,7 @@ export default function AllowlistFunnel() {
     const v = value.trim();
     if (!v) return "Add the address you want the squib to land in.";
     if (!EVM_ADDRESS_RE.test(v))
-      return "That doesn't look like an EVM address — it should start with 0x and be 42 characters.";
+      return "That does not look right. An EVM address starts with 0x and is 42 characters long.";
     return null;
   }
 
@@ -102,7 +102,7 @@ export default function AllowlistFunnel() {
       // say plainly which one — a generic failure just gets retried forever.
       setAddressError(
         err instanceof ApiError && err.code === "address_taken"
-          ? "That address is already on the list. One squib per address — try another."
+          ? "That address is already on the list. One squib per address, so try another one."
           : err instanceof ApiError && err.code === "already_entered"
             ? "This account already has a spot. Check the leaderboard for your rank."
             : "That didn't go through. Give it a moment and try again.",
@@ -124,7 +124,7 @@ export default function AllowlistFunnel() {
           <StepBlock
             n={1}
             title="Connect X"
-            note="We read your handle. That's it — no posting on your behalf."
+            note="We read your handle and nothing else. We will never post anything as you."
             done={connected}
           >
             {!hydrated ? (
@@ -158,7 +158,7 @@ export default function AllowlistFunnel() {
                 className="w-full"
               >
                 {!connecting ? <XLogo className="h-4 w-4" /> : null}
-                {connecting ? "Opening X…" : "Connect X"}
+                {connecting ? "Opening X" : "Connect X"}
               </Button>
             )}
           </StepBlock>
@@ -167,17 +167,25 @@ export default function AllowlistFunnel() {
           <StepBlock
             n={2}
             title="Do the three things"
-            note={`The fourth is a bonus — worth ${POINTS.quote} points, never required.`}
+            note={`They unlock one at a time. The fourth one is a bonus worth ${POINTS.quote} points and it is never required.`}
             done={baseTasksDone}
             dimmed={!connected}
           >
             <ul className="divide-y-2 divide-hairline overflow-hidden rounded-squib border-2 border-hairline bg-cream">
-              {TASKS.map((task) => (
+              {TASKS.map((task, index) => (
                 <TaskRow
                   key={task.id}
                   task={task}
                   status={progress.tasks[task.id]}
-                  disabled={!connected}
+                  /**
+                   * One at a time. A task stays shut until the one above it is
+                   * done, so nobody fires all four at once and then wonders
+                   * which of them actually went through.
+                   */
+                  locked={
+                    !connected ||
+                    TASKS.slice(0, index).some((t) => progress.tasks[t.id] !== "done")
+                  }
                   onStatus={(s) => setTask(task.id, s)}
                   onServerProgress={applyServerProgress}
                 />
@@ -189,7 +197,7 @@ export default function AllowlistFunnel() {
           <StepBlock
             n={3}
             title="Where should it land?"
-            note={`An EVM address on any chain works — it's just an address. One entry per address.`}
+            note="Any EVM address works. One entry per address, so use the one you actually want the squib in."
             done={alreadyIn}
             dimmed={!baseTasksDone}
           >
@@ -269,14 +277,14 @@ export default function AllowlistFunnel() {
                   disabled={!baseTasksDone || !captcha}
                   className="w-full"
                 >
-                  {submitting ? "Locking it in…" : "Claim my spot"}
+                  {submitting ? "Locking it in" : "Claim my spot"}
                 </Button>
               )}
 
               <p className="text-center text-xs leading-relaxed text-ink/45">
-                Finish the three base tasks and you are allowlisted — no draw, no
-                cut. The top {WL_WINNERS} on the leaderboard get guaranteed spots
-                on top.
+                Finish the three tasks and you are on the list. No draw, no cut.
+                The people at the top of the leaderboard pick up guaranteed spots
+                on top of that.
               </p>
             </form>
           </StepBlock>
@@ -371,13 +379,13 @@ function StepBlock({
 function TaskRow({
   task,
   status,
-  disabled,
+  locked,
   onStatus,
   onServerProgress,
 }: {
   task: Task;
   status: "pending" | "verifying" | "done";
-  disabled: boolean;
+  locked: boolean;
   onStatus: (s: "pending" | "verifying" | "done") => void;
   onServerProgress: (p: UserProgress) => void;
 }) {
@@ -399,37 +407,45 @@ function TaskRow({
   }
 
   return (
-    <li className="flex items-center gap-3 px-4 py-3.5">
+    <li
+      className={`flex items-center gap-3 px-4 py-3.5 transition-opacity ${
+        locked && !done ? "opacity-45" : ""
+      }`}
+    >
       <span
-        className={`grid h-9 w-9 shrink-0 place-items-center rounded-none ${
-          done ? "bg-squib text-ink" : "bg-ink/[0.06] text-ink/55"
+        className={`grid h-9 w-9 shrink-0 place-items-center border-2 border-hairline ${
+          done ? "bg-squib text-ink" : locked ? "bg-locked text-ink/50" : "bg-cream text-ink/70"
         }`}
       >
-        {done ? <Check className="h-4 w-4" /> : <TaskIcon id={task.id as TaskId} />}
+        {done ? (
+          <Check className="h-4 w-4" />
+        ) : locked ? (
+          <LockIcon />
+        ) : (
+          <TaskIcon id={task.id as TaskId} />
+        )}
       </span>
 
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-sm font-medium">{task.label}</span>
-          {task.bonus ? (
-            <Chip tone="outline" className="text-[10px]">
-              Bonus
-            </Chip>
-          ) : null}
+          {task.bonus ? <Chip tone="outline">Bonus</Chip> : null}
         </span>
         <span className="mt-0.5 flex items-center gap-2 text-xs text-ink/45">
           <span className="font-mono">+{task.points}</span>
           <span aria-hidden>·</span>
-          <a
-            href={task.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center gap-1 underline underline-offset-4 transition hover:text-ink ${
-              disabled ? "pointer-events-none" : ""
-            }`}
-          >
-            Open on X <ExternalIcon className="h-3 w-3" />
-          </a>
+          {locked ? (
+            <span>Finish the one above first</span>
+          ) : (
+            <a
+              href={task.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 underline underline-offset-4 transition hover:text-ink"
+            >
+              Open on X <ExternalIcon className="h-3 w-3" />
+            </a>
+          )}
         </span>
       </span>
 
@@ -441,13 +457,27 @@ function TaskRow({
         <button
           type="button"
           onClick={handleVerify}
-          disabled={disabled || busy}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-none border-2 border-hairline bg-surface px-3 font-display text-[11px] font-semibold uppercase tracking-wide transition hover:bg-ink hover:text-cream disabled:pointer-events-none disabled:opacity-40"
+          disabled={locked || busy}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 border-2 border-hairline bg-surface px-3 font-display text-[11px] font-semibold uppercase tracking-wide transition hover:bg-ink hover:text-cream disabled:pointer-events-none disabled:opacity-40"
         >
           {busy ? <Spinner className="h-3 w-3" /> : null}
-          {busy ? "Checking" : "Verify"}
+          {busy ? "Checking" : locked ? "Locked" : "Verify"}
         </button>
       )}
     </li>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
+      <rect x="3" y="7" width="10" height="7" fill="currentColor" />
+      <path
+        d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
   );
 }

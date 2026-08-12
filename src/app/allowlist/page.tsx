@@ -7,7 +7,7 @@ import Reveal from "@/components/ui/Reveal";
 export const metadata: Metadata = {
   title: "Allowlist",
   description:
-    "Three small things and you're on the list. No wallet connection, no signature, nothing to approve.",
+    "Follow, like, repost, drop in an address. No wallet to connect and nothing to sign.",
 };
 
 export default function AllowlistPage() {
@@ -15,8 +15,8 @@ export default function AllowlistPage() {
     <>
       <PageHeader
         eyebrow="Allowlist"
-        title="Three small things and you're on the list."
-        intro="No wallet connection, no signature, nothing to approve. We ask for an address as plain text and that is the extent of it."
+        title="Three things, then you're on the list."
+        intro="There is no wallet to connect here and nothing to sign. You do three small things on X, tell us where to send a squib, and that is the whole process. Takes about a minute."
         align="center"
       />
       <div className="bg-squib-wash/50">

@@ -1,14 +1,15 @@
 "use client";
 
+import Link from "next/link";
+
 import { buildShareIntent, earn } from "@/lib/api";
-import { POINTS, WL_WINNERS } from "@/lib/constants";
+import { POINTS } from "@/lib/constants";
 import { localDayKey } from "@/lib/dates";
 import type { SubmitResult } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import SquibHead from "../art/SquibHead";
 import { LinkButton } from "../ui/Button";
 import Modal, { ModalClose } from "../ui/Modal";
-import SpinWheel from "./SpinWheel";
 
 export default function SuccessModal({
   open,
@@ -22,9 +23,9 @@ export default function SuccessModal({
   const { progress, applyServerProgress } = useProgress();
   const rank = result?.rank ?? null;
 
-  // The share bonus is credited when they open the intent. Verifying that the
-  // post actually happened is the least reliable check of the four, which is
-  // exactly why this is a bonus and not a gate.
+  // The share bonus lands when they open the intent. Checking that the post
+  // actually happened is the least reliable of the four checks, which is why
+  // this is a bonus and not a gate.
   async function creditShare() {
     const { progress: server } = await earn("share", { day: localDayKey() });
     if (server) applyServerProgress(server);
@@ -38,56 +39,58 @@ export default function SuccessModal({
         <div className="flex items-center gap-4">
           <SquibHead size={160} className="h-20 w-20 shrink-0 animate-bob" />
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-squib-deep">
-              Allowlisted
-            </p>
+            <p className="stamp text-squib-deep">You&apos;re in</p>
             <h3
               id="wl-success-title"
-              className="mt-1 font-display text-3xl font-semibold tracking-tightest"
+              className="mt-2 font-display text-3xl font-bold tracking-tightest"
             >
-              You&apos;re in.
+              That&apos;s your spot.
             </h3>
           </div>
         </div>
 
-        <dl className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-squib border-2 border-hairline bg-cream px-4 py-3">
-            <dt className="text-xs text-ink/50">Your rank</dt>
-            <dd className="mt-1 font-mono text-2xl font-bold tabular">
-              {rank ? `#${rank}` : "—"}
+        <dl className="mt-6 grid grid-cols-2 gap-px border-2 border-hairline bg-hairline">
+          <div className="bg-cream px-4 py-3">
+            <dt className="stamp text-ink/50">Your place</dt>
+            <dd className="mt-1.5 font-mono text-2xl font-bold tabular">
+              {rank ? `#${rank}` : "··"}
             </dd>
           </div>
-          <div className="rounded-squib border-2 border-hairline bg-cream px-4 py-3">
-            <dt className="text-xs text-ink/50">Points</dt>
-            <dd className="mt-1 font-mono text-2xl font-bold tabular">
+          <div className="bg-cream px-4 py-3">
+            <dt className="stamp text-ink/50">Points</dt>
+            <dd className="mt-1.5 font-mono text-2xl font-bold tabular">
               {progress.points}
             </dd>
           </div>
         </dl>
 
-        <p className="mt-4 text-sm leading-relaxed text-ink/60 text-pretty">
-          Your spot is locked to that address. To move up, come back tomorrow —
-          the check-in streak is worth more than anything you can do in one
-          sitting, and the top {WL_WINNERS} at snapshot get guaranteed spots.
+        <p className="mt-4 text-sm leading-relaxed text-ink/65 text-pretty">
+          Your spot is tied to that address. If you want to move up the board,
+          come back tomorrow and take your spin. That is worth far more over a
+          few weeks than anything you can do in one sitting.
         </p>
 
-        <div className="mt-5">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <LinkButton
             href={buildShareIntent(rank)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={creditShare}
             size="lg"
-            className="w-full"
           >
             {/* INTEGRATION: share intent (pre-filled quote tweet) */}
-            Share to earn +{POINTS.quote}
+            Share for +{POINTS.quote}
+          </LinkButton>
+          <LinkButton href="/leaderboard" variant="ghost" size="lg">
+            See the board
           </LinkButton>
         </div>
 
-        <div className="mt-6 border-t-2 border-hairline pt-6">
-          <SpinWheel />
-        </div>
+        <p className="mt-4 text-center text-xs text-ink/45">
+          <Link href="/roadmap" className="underline underline-offset-4">
+            What happens next
+          </Link>
+        </p>
       </div>
     </Modal>
   );

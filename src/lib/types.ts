@@ -1,21 +1,14 @@
 export type Squib = {
-  /** Token id, zero padded to four digits when displayed. */
-  id: number;
+  /** URL segment. No numbers anywhere, so this is what the route uses. */
+  slug: string;
   name: string;
-  /** What they do. Drives the display copy, not the art. */
+  /** What they do. */
   role: string;
   bio: string;
   /** Square render in /public/squibs. */
   photo: string;
-  /** Where the shot was taken — small caption detail on the squib page. */
+  /** Where the shot was taken. */
   scene: string;
-};
-
-export type RevealProgress = {
-  revealed: number;
-  total: number;
-  allowlisted: number;
-  nextMilestone: { allowlisted: number; reveals: number; label: string } | null;
 };
 
 export type TaskId = "follow" | "like" | "retweet" | "quote";
@@ -47,26 +40,10 @@ export type LeaderboardEntry = {
   isYou?: boolean;
 };
 
-export type DailyQuest = {
-  id: string;
-  title: string;
-  detail: string;
-  points: number;
-};
-
-export type TriviaQuestion = {
-  id: string;
-  prompt: string;
-  options: string[];
-  answerIndex: number;
-  /** Shown after answering, right or wrong. */
-  note: string;
-};
-
+/** Result of one daily spin. `segment` tells the wheel where to stop. */
 export type SpinResult = {
-  upgraded: boolean;
-  /** Server-decided, echoed back for display. Never computed in the browser. */
-  odds: number;
+  segment: number;
+  points: number;
 };
 
 export type SubmitResult = {
@@ -81,14 +58,11 @@ export type UserProgress = {
   tasks: Record<TaskId, TaskStatus>;
   evmAddress: string | null;
   allowlisted: boolean;
-  gtd: boolean;
-  spinUsed: boolean;
   points: number;
   streak: number;
+  /** ISO timestamp of the last daily spin, or null. */
+  lastSpinAt: string | null;
   /** YYYY-MM-DD in the user's local timezone, or null. */
-  lastCheckIn: string | null;
-  questDoneOn: string | null;
-  triviaDoneOn: string | null;
   gamePlayedOn: string | null;
   gameBest: number;
 };

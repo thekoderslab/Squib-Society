@@ -11,8 +11,8 @@ export const MINT_VENUE = "OpenSea"; // minting happens off-site — no mint UI 
 export const WL_WINNERS = 20; // top N from the leaderboard at snapshot
 
 export const SITE_URL = "https://squibsociety.xyz"; // placeholder
-export const X_HANDLE = "@squibsociety";
-export const X_URL = "https://x.com/squibsociety"; // placeholder
+export const X_HANDLE = "@SquibSociety";
+export const X_URL = "https://x.com/SquibSociety";
 export const OPENSEA_URL = "https://opensea.io/collection/squib-society"; // placeholder
 export const PINNED_POST_URL = "https://x.com/squibsociety/status/1"; // placeholder
 
@@ -37,18 +37,6 @@ export const POINTS = {
   gameDailyCap: 90,
 } as const;
 
-/**
- * Vault milestones. `reveals` is the CUMULATIVE number of squibs out of the
- * vault once that allowlist count is hit — not the increment.
- */
-export const REVEAL_MILESTONES = [
-  { allowlisted: 1_000, reveals: 4, label: "First light" },
-  { allowlisted: 2_000, reveals: 7, label: "Second look" },
-  { allowlisted: 3_000, reveals: 10, label: "Third look" },
-  { allowlisted: 5_000, reveals: 16, label: "Half the shelf" },
-  { allowlisted: 10_000, reveals: 24, label: "The big open" },
-] as const;
-
 /** Brand marks. The bare squib head is the logo. */
 export const LOGO = {
   /** Sits on any background — used in the nav, footer and ambient moments. */
@@ -60,11 +48,20 @@ export const LOGO = {
 export const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 
 export const NAV_LINKS = [
-  { label: "Vault", href: "/vault" },
+  { label: "Home", href: "/" },
   { label: "Roadmap", href: "/roadmap" },
   { label: "Allowlist", href: "/allowlist" },
   { label: "Leaderboard", href: "/leaderboard" },
 ] as const;
+
+/**
+ * Daily spin. One pull every 24 hours, points only.
+ * Segment order is the order they sit on the wheel, clockwise from the top.
+ */
+export const DAILY_SPIN = {
+  cooldownHours: 24,
+  prizes: [10, 40, 20, 100, 15, 60, 25, 250],
+} as const;
 
 /** localStorage key for the mocked user session. Bump the suffix to reset. */
 export const STORAGE_KEY = "squib-society/progress/v1";

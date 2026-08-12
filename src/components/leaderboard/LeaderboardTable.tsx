@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { getLeaderboard } from "@/lib/api";
-import { WL_WINNERS } from "@/lib/constants";
+
 import type { LeaderboardEntry } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Avatar from "../art/Avatar";
 import { FlameIcon } from "../funnel/icons";
 
 const VISIBLE = 12;
+/** Rows above this get the green rank. The exact number is never shown. */
+const TOP_CUT = 20;
 
 export default function LeaderboardTable() {
   const { hydrated, progress } = useProgress();
@@ -44,7 +46,7 @@ export default function LeaderboardTable() {
     };
   }, [hydrated, me]);
 
-  const shown = entries?.slice(0, expanded ? WL_WINNERS + 5 : VISIBLE) ?? [];
+  const shown = entries?.slice(0, expanded ? 25 : VISIBLE) ?? [];
   const youOffscreen = you && you.rank > shown.length;
 
   return (
@@ -85,7 +87,7 @@ export default function LeaderboardTable() {
             onClick={() => setExpanded((v) => !v)}
             className="rounded-none px-3 py-1.5 text-sm font-medium text-ink/60 transition hover:text-ink"
           >
-            {expanded ? "Show less" : `Show the top ${WL_WINNERS}`}
+            {expanded ? "Show less" : "Show more"}
           </button>
         </div>
       ) : null}
@@ -94,7 +96,7 @@ export default function LeaderboardTable() {
 }
 
 function Row({ entry, pinned }: { entry: LeaderboardEntry; pinned?: boolean }) {
-  const inTheMoney = entry.rank <= WL_WINNERS;
+  const inTheMoney = entry.rank <= TOP_CUT;
   return (
     <div
       className={`grid grid-cols-[3rem_1fr_auto] items-center gap-3 px-4 py-3 sm:px-5 ${

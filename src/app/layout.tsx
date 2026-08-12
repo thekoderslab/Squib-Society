@@ -25,24 +25,24 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${COLLECTION_NAME} — ${TOTAL_SUPPLY} tiny old gods took up hobbies`,
-    template: `%s — ${COLLECTION_NAME}`,
+    default: `${COLLECTION_NAME}, ${TOTAL_SUPPLY} squibs`,
+    template: `%s · ${COLLECTION_NAME}`,
   },
-  description: `A collection of ${TOTAL_SUPPLY} designer-toy squibs. Allowlist open now. Minting on ${MINT_VENUE}, on ${CHAIN}.`,
+  description: `${TOTAL_SUPPLY} squibs, and every one of them is up to something. Allowlist is open. Minting on ${MINT_VENUE}, on ${CHAIN}.`,
   icons: {
     icon: LOGO.badge,
     apple: LOGO.badge,
   },
   openGraph: {
     title: COLLECTION_NAME,
-    description: `${TOTAL_SUPPLY} tiny old gods took up hobbies. Join the allowlist.`,
+    description: `${TOTAL_SUPPLY} squibs, and every one of them is up to something.`,
     type: "website",
     images: [{ url: LOGO.badge, width: 1200, height: 1200 }],
   },
   twitter: {
     card: "summary_large_image",
     title: COLLECTION_NAME,
-    description: `${TOTAL_SUPPLY} tiny old gods took up hobbies.`,
+    description: `${TOTAL_SUPPLY} squibs, and every one of them is up to something.`,
     images: [LOGO.badge],
   },
 };

@@ -13,12 +13,12 @@ export default function NotFound() {
         Nothing here.
       </h1>
       <p className="mt-4 max-w-sm text-[17px] leading-relaxed text-ink/65">
-        Either this squib is still in the vault, or the link is wrong. Only ten
+        Either this squib has not been shown yet, or the link is wrong. Only a few
         of the {TOTAL_SUPPLY} have pages so far.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <LinkButton href="/vault" size="lg">
-          Open the vault
+        <LinkButton href="/allowlist" size="lg">
+          Join allowlist
         </LinkButton>
         <LinkButton href="/" variant="ghost" size="lg">
           Back home

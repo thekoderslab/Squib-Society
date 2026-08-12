@@ -79,9 +79,10 @@ create unique index if not exists ledger_once_per_day
   where day is not null;
 
 -- One-time things (the X tasks, the share bonus): one award, ever.
+-- Spins are excluded: they repeat every 24 hours and are gated by daily_spin().
 create unique index if not exists ledger_once_ever
   on public.points_ledger (profile_id, kind)
-  where day is null;
+  where day is null and kind <> 'spin';
 
 create index if not exists ledger_profile_idx
   on public.points_ledger (profile_id);
@@ -89,10 +90,15 @@ create index if not exists ledger_profile_idx
 -- ── streaks ─────────────────────────────────────────────────────────────────
 create table if not exists public.streaks (
   profile_id      uuid primary key references public.profiles(id) on delete cascade,
+  -- current_streak is the number of daily spins taken in a row.
   current_streak  integer not null default 0,
   longest_streak  integer not null default 0,
-  last_check_in   date
+  last_check_in   date,
+  last_spin_at    timestamptz
 );
+
+-- Safe to run on an existing database.
+alter table public.streaks add column if not exists last_spin_at timestamptz;
 
 -- ── leaderboard ─────────────────────────────────────────────────────────────
 -- A view, not a table: the ledger is the truth, this is just how we read it.
@@ -114,64 +120,55 @@ create or replace view public.leaderboard as
 -- single source of truth; the ATOMICITY lives here where it belongs.
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Daily check-in. Returns what was awarded and the resulting streak.
--- A gap of exactly one day continues the streak; anything else resets it to 1.
-create or replace function public.check_in(
-  p_profile        uuid,
-  p_day            date,
-  p_base           integer,
-  p_bonus_per_day  integer,
-  p_bonus_cap      integer
+-- One spin every 24 hours.
+-- Locks the streak row, checks how long since the last spin, and either writes
+-- the award or refuses. Both the check and the write happen inside this one
+-- call, so two tabs firing at once produce one prize and one refusal.
+create or replace function public.daily_spin(
+  p_profile         uuid,
+  p_points          integer,
+  p_cooldown_hours  integer
 )
-returns table (awarded integer, streak integer, already_done boolean)
+returns table (applied boolean, awarded integer, next_at timestamptz)
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_last    date;
-  v_streak  integer;
-  v_bonus   integer;
-  v_awarded integer;
+  v_last    timestamptz;
+  v_count   integer;
+  v_cool    interval := make_interval(hours => p_cooldown_hours);
 begin
-  select s.last_check_in, s.current_streak
-    into v_last, v_streak
+  select s.last_spin_at, s.current_streak
+    into v_last, v_count
     from public.streaks s
    where s.profile_id = p_profile
      for update;
 
   if not found then
-    insert into public.streaks (profile_id, current_streak, longest_streak, last_check_in)
-    values (p_profile, 0, 0, null);
+    insert into public.streaks (profile_id, current_streak, longest_streak)
+    values (p_profile, 0, 0);
     v_last := null;
-    v_streak := 0;
+    v_count := 0;
   end if;
 
-  if v_last = p_day then
-    return query select 0, v_streak, true;
+  if v_last is not null and now() < v_last + v_cool then
+    return query select false, 0, v_last + v_cool;
     return;
   end if;
 
-  if v_last = p_day - 1 then
-    v_streak := v_streak + 1;
-  else
-    v_streak := 1;
-  end if;
-
-  v_bonus   := least((v_streak - 1) * p_bonus_per_day, p_bonus_cap);
-  v_awarded := p_base + v_bonus;
+  v_count := coalesce(v_count, 0) + 1;
 
   update public.streaks
-     set current_streak = v_streak,
-         longest_streak = greatest(longest_streak, v_streak),
-         last_check_in  = p_day
+     set current_streak = v_count,
+         longest_streak = greatest(coalesce(longest_streak, 0), v_count),
+         last_spin_at   = now()
    where profile_id = p_profile;
 
   insert into public.points_ledger (profile_id, kind, points, day)
-  values (p_profile, 'checkin', v_awarded, p_day)
-  on conflict do nothing;
+  values (p_profile, 'spin', p_points, null);
 
-  return query select v_awarded, v_streak, false;
+  return query select true, p_points, now() + v_cool;
 end;
 $$;
 
@@ -201,48 +198,6 @@ begin
 end;
 $$;
 
--- The GTD spin. One per allowlist entry, forever. The caller (a server route)
--- has already rolled the dice; this records it and refuses a second attempt.
-create or replace function public.use_spin(
-  p_profile  uuid,
-  p_upgraded boolean
-)
-returns table (applied boolean, gtd boolean)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_used boolean;
-  v_gtd  boolean;
-begin
-  select e.spin_used, e.gtd
-    into v_used, v_gtd
-    from public.allowlist_entries e
-   where e.profile_id = p_profile
-     for update;
-
-  if not found then
-    raise exception 'no allowlist entry for profile %', p_profile
-      using errcode = 'P0002';
-  end if;
-
-  if v_used then
-    return query select false, v_gtd;
-    return;
-  end if;
-
-  update public.allowlist_entries
-     set spin_used   = true,
-         spin_result = p_upgraded,
-         gtd         = gtd or p_upgraded
-   where profile_id = p_profile
-  returning gtd into v_gtd;
-
-  return query select true, v_gtd;
-end;
-$$;
-
 -- ── lock everything down ────────────────────────────────────────────────────
 -- RLS on, zero policies. The anon and authenticated roles can do nothing here;
 -- only the service role (server-side) gets through.
@@ -257,6 +212,5 @@ revoke all on public.points_ledger     from anon, authenticated;
 revoke all on public.streaks           from anon, authenticated;
 revoke all on public.leaderboard       from anon, authenticated;
 
-revoke all on function public.check_in(uuid, date, integer, integer, integer)   from anon, authenticated;
+revoke all on function public.daily_spin(uuid, integer, integer)                 from anon, authenticated;
 revoke all on function public.award_points(uuid, text, integer, date, jsonb)    from anon, authenticated;
-revoke all on function public.use_spin(uuid, boolean)                           from anon, authenticated;
