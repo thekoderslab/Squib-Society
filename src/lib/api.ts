@@ -151,11 +151,19 @@ export async function requestSpin(): Promise<
   const res = await call<{
     segment: number;
     points: number;
+    gtd: boolean;
+    again: boolean;
     progress: UserProgress;
   }>("/api/spin", { method: "POST" });
 
   if (!res) return { ...(await mock.requestSpin()), progress: null };
-  return { segment: res.segment, points: res.points, progress: res.progress };
+  return {
+    segment: res.segment,
+    points: res.points,
+    gtd: res.gtd,
+    again: res.again,
+    progress: res.progress,
+  };
 }
 
 /* ── repeatable earning ─────────────────────────────────────────────────── */

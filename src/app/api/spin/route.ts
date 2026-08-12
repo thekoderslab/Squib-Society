@@ -8,13 +8,29 @@ import { supabaseConfigured } from "@/lib/server/supabase";
 
 export const dynamic = "force-dynamic";
 
+/** Weighted pick. Weights live in constants.ts, the roll happens here. */
+function pickSegment(): number {
+  const total = DAILY_SPIN.segments.reduce((sum, s) => sum + s.weight, 0);
+
+  // getRandomValues rather than Math.random: this hands out points and spots.
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  let roll = (buf[0] / 2 ** 32) * total;
+
+  for (let i = 0; i < DAILY_SPIN.segments.length; i++) {
+    roll -= DAILY_SPIN.segments[i].weight;
+    if (roll <= 0) return i;
+  }
+  return DAILY_SPIN.segments.length - 1;
+}
+
 /**
  * // INTEGRATION: server-authoritative daily spin.
  *
- * The segment is picked here and written before it is returned, so a client
+ * The segment is chosen here and written before it is returned, so a client
  * that drops the response or replays the request cannot re-roll. `daily_spin`
- * locks the row and enforces the 24 hour cooldown, which means the answer is
- * the same whether one tab asks or six do.
+ * locks the row and enforces the cooldown, which means the answer is the same
+ * whether one tab asks or six do. The wheel is only told where to stop.
  */
 export async function POST() {
   if (!supabaseConfigured) return notConfigured();
@@ -23,13 +39,17 @@ export async function POST() {
     const profileId = await getSessionProfileId();
     if (!profileId) return unauthorized();
 
-    // getRandomValues rather than Math.random: this hands out points.
-    const buf = new Uint32Array(1);
-    crypto.getRandomValues(buf);
-    const segment = buf[0] % DAILY_SPIN.prizes.length;
-    const points = DAILY_SPIN.prizes[segment];
+    const segment = pickSegment();
+    const seg = DAILY_SPIN.segments[segment];
 
-    const res = await dailySpin(profileId, points, DAILY_SPIN.cooldownHours);
+    const res = await dailySpin({
+      profileId,
+      points: seg.points,
+      cooldownHours: DAILY_SPIN.cooldownHours,
+      // "Again" pays nothing and does not start the clock.
+      consume: seg.kind !== "again",
+      gtd: seg.kind === "gtd",
+    });
 
     if (!res.applied) {
       return NextResponse.json(
@@ -41,6 +61,8 @@ export async function POST() {
     return NextResponse.json({
       segment,
       points: res.awarded,
+      gtd: seg.kind === "gtd",
+      again: seg.kind === "again",
       progress: await getUserState(profileId),
     });
   } catch (e) {

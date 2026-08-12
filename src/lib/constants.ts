@@ -48,19 +48,44 @@ export const LOGO = {
 export const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 
 export const NAV_LINKS = [
-  { label: "Home", href: "/" },
+  { label: "Squib", href: "/squib" },
   { label: "Roadmap", href: "/roadmap" },
   { label: "Allowlist", href: "/allowlist" },
   { label: "Leaderboard", href: "/leaderboard" },
 ] as const;
 
+export type SpinSegment = {
+  kind: "points" | "gtd" | "again";
+  points: number;
+  label: string;
+  /**
+   * Relative chance of landing here. Not a percentage, the server normalises
+   * them. Keep GTD low: it is the only segment that hands out a real spot.
+   */
+  weight: number;
+};
+
 /**
- * Daily spin. One pull every 24 hours, points only.
- * Segment order is the order they sit on the wheel, clockwise from the top.
+ * Daily spin. One pull every 24 hours.
+ *
+ * Order is the order the segments sit on the wheel, clockwise from the top.
+ * "again" does not burn the cooldown, so it costs the player nothing but a
+ * second of suspense.
  */
 export const DAILY_SPIN = {
   cooldownHours: 24,
-  prizes: [10, 40, 20, 100, 15, 60, 25, 250],
+  segments: [
+    { kind: "points", points: 25, label: "25", weight: 18 },
+    { kind: "points", points: 60, label: "60", weight: 10 },
+    { kind: "again", points: 0, label: "Again", weight: 12 },
+    { kind: "points", points: 100, label: "100", weight: 8 },
+    { kind: "points", points: 15, label: "15", weight: 18 },
+    { kind: "gtd", points: 50, label: "GTD", weight: 1 },
+    { kind: "points", points: 40, label: "40", weight: 16 },
+    { kind: "again", points: 0, label: "Again", weight: 12 },
+    { kind: "points", points: 250, label: "250", weight: 3 },
+    { kind: "points", points: 10, label: "10", weight: 18 },
+  ] as SpinSegment[],
 } as const;
 
 /** localStorage key for the mocked user session. Bump the suffix to reset. */

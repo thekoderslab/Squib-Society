@@ -121,15 +121,23 @@ create or replace view public.leaderboard as
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- One spin every 24 hours.
+--
 -- Locks the streak row, checks how long since the last spin, and either writes
--- the award or refuses. Both the check and the write happen inside this one
--- call, so two tabs firing at once produce one prize and one refusal.
+-- the award or refuses. Both the check and the write happen in this one call,
+-- so two tabs firing at once produce one prize and one refusal.
+--
+-- p_consume = false is the "try again" segment: it pays nothing and does NOT
+-- start the cooldown, so the player spins straight away at no cost.
+-- p_gtd = true also flips the guaranteed flag on their allowlist entry, if
+-- they have one yet.
 create or replace function public.daily_spin(
   p_profile         uuid,
   p_points          integer,
-  p_cooldown_hours  integer
+  p_cooldown_hours  integer,
+  p_consume         boolean default true,
+  p_gtd             boolean default false
 )
-returns table (applied boolean, awarded integer, next_at timestamptz)
+returns table (applied boolean, awarded integer, gtd boolean, next_at timestamptz)
 language plpgsql
 security definer
 set search_path = public
@@ -137,6 +145,7 @@ as $$
 declare
   v_last    timestamptz;
   v_count   integer;
+  v_gtd     boolean := false;
   v_cool    interval := make_interval(hours => p_cooldown_hours);
 begin
   select s.last_spin_at, s.current_streak
@@ -152,23 +161,40 @@ begin
     v_count := 0;
   end if;
 
+  -- The cooldown is checked even for "again", otherwise a client could ask for
+  -- a free segment forever and farm the wheel.
   if v_last is not null and now() < v_last + v_cool then
-    return query select false, 0, v_last + v_cool;
+    return query select false, 0, false, v_last + v_cool;
     return;
   end if;
 
-  v_count := coalesce(v_count, 0) + 1;
+  if p_consume then
+    v_count := coalesce(v_count, 0) + 1;
+    update public.streaks
+       set current_streak = v_count,
+           longest_streak = greatest(coalesce(longest_streak, 0), v_count),
+           last_spin_at   = now()
+     where profile_id = p_profile;
+  end if;
 
-  update public.streaks
-     set current_streak = v_count,
-         longest_streak = greatest(coalesce(longest_streak, 0), v_count),
-         last_spin_at   = now()
-   where profile_id = p_profile;
+  if p_points > 0 then
+    insert into public.points_ledger (profile_id, kind, points, day, meta)
+    values (p_profile, 'spin', p_points, null, jsonb_build_object('gtd', p_gtd));
+  end if;
 
-  insert into public.points_ledger (profile_id, kind, points, day)
-  values (p_profile, 'spin', p_points, null);
+  if p_gtd then
+    update public.allowlist_entries
+       set gtd = true
+     where profile_id = p_profile
+    returning true into v_gtd;
+    v_gtd := coalesce(v_gtd, false);
+  end if;
 
-  return query select true, p_points, now() + v_cool;
+  return query
+    select true,
+           p_points,
+           v_gtd,
+           case when p_consume then now() + v_cool else v_last end;
 end;
 $$;
 
@@ -212,5 +238,5 @@ revoke all on public.points_ledger     from anon, authenticated;
 revoke all on public.streaks           from anon, authenticated;
 revoke all on public.leaderboard       from anon, authenticated;
 
-revoke all on function public.daily_spin(uuid, integer, integer)                 from anon, authenticated;
+revoke all on function public.daily_spin(uuid, integer, integer, boolean, boolean) from anon, authenticated;
 revoke all on function public.award_points(uuid, text, integer, date, jsonb)    from anon, authenticated;

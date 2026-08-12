@@ -7,7 +7,9 @@ import LeaderboardTable from "./LeaderboardTable";
 export default function LeaderboardSection() {
   return (
     <div className="space-y-8 sm:space-y-10">
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* The spin is the reason to come back, so it gets the wide slot and the
+          game sits beside it on desktop only. */}
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
         <Reveal className="h-full">
           <DailySpin />
         </Reveal>

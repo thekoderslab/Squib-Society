@@ -154,6 +154,7 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
     },
     evmAddress: entry?.evm_address ?? null,
     allowlisted: !!entry,
+    gtd: entry?.gtd ?? false,
     points: ledger.reduce((sum, r) => sum + r.points, 0),
     // Streak here is "spins taken", which is what the flame on the board means.
     streak: streak?.current_streak ?? 0,
@@ -203,16 +204,21 @@ export async function awardDaily(
  * one locking transaction, so a client that fires the request twice gets one
  * spin and one refusal, never two prizes.
  */
-export async function dailySpin(
-  profileId: string,
-  points: number,
-  cooldownHours: number,
-): Promise<{ applied: boolean; awarded: number; nextAt: string | null }> {
+export async function dailySpin(input: {
+  profileId: string;
+  points: number;
+  cooldownHours: number;
+  /** false for the "try again" segment, which does not start the cooldown. */
+  consume: boolean;
+  gtd: boolean;
+}): Promise<{ applied: boolean; awarded: number; gtd: boolean; nextAt: string | null }> {
   const db = admin();
   const { data, error } = await db.rpc("daily_spin", {
-    p_profile: profileId,
-    p_points: points,
-    p_cooldown_hours: cooldownHours,
+    p_profile: input.profileId,
+    p_points: input.points,
+    p_cooldown_hours: input.cooldownHours,
+    p_consume: input.consume,
+    p_gtd: input.gtd,
   });
   if (error) fail("dailySpin", error);
 
@@ -220,6 +226,7 @@ export async function dailySpin(
   return {
     applied: Boolean(row?.applied),
     awarded: Number(row?.awarded ?? 0),
+    gtd: Boolean(row?.gtd),
     nextAt: (row?.next_at as string | null) ?? null,
   };
 }

@@ -20,6 +20,7 @@ const EMPTY: UserProgress = {
   tasks: { follow: "pending", like: "pending", retweet: "pending", quote: "pending" },
   evmAddress: null,
   allowlisted: false,
+  gtd: false,
   points: 0,
   streak: 0,
   lastSpinAt: null,
@@ -42,7 +43,7 @@ type Ctx = {
   setTask: (id: TaskId, status: TaskStatus) => void;
   setEvmAddress: (address: string) => void;
   markAllowlisted: () => void;
-  recordSpin: (points: number) => void;
+  recordSpin: (points: number, gtd: boolean) => void;
   recordGame: (score: number) => number;
   reset: () => void;
   baseTasksDone: boolean;
@@ -138,11 +139,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   );
 
   const recordSpin = useCallback(
-    (points: number) =>
+    (points: number, gtd: boolean) =>
       patch((p) => ({
         ...p,
         lastSpinAt: new Date().toISOString(),
         streak: p.streak + 1,
+        gtd: p.gtd || gtd,
         points: p.points + points,
       })),
     [patch],

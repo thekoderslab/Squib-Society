@@ -153,12 +153,49 @@ export function getMyTasks(): Task[] {
   return TASKS;
 }
 
-/** Mock handles for the fake X connect. Rotates so repeat demos differ. */
+/**
+ * Mock handles for the fake X connect. The extra fields mirror exactly what
+ * /2/users/me returns on the free read-only scopes, so the profile card is
+ * built against the real shape.
+ */
 const MOCK_HANDLES: XAccount[] = [
-  { handle: "tentaclepilled", displayName: "tentacle pilled", seed: "tp" },
-  { handle: "vinylgoblin", displayName: "vinyl goblin", seed: "vg" },
-  { handle: "shelfappeal", displayName: "shelf appeal", seed: "sa" },
-  { handle: "softcosmic", displayName: "soft cosmic", seed: "sc" },
+  {
+    handle: "tentaclepilled",
+    displayName: "tentacle pilled",
+    seed: "tp",
+    bio: "collecting small green things. mostly harmless.",
+    followers: 4821,
+    following: 312,
+    joinedAt: "2019-04-11",
+  },
+  {
+    handle: "vinylgoblin",
+    displayName: "vinyl goblin",
+    seed: "vg",
+    bio: "shelf full, wallet empty",
+    followers: 1290,
+    following: 806,
+    joinedAt: "2021-08-02",
+  },
+  {
+    handle: "shelfappeal",
+    displayName: "shelf appeal",
+    seed: "sa",
+    bio: "if it has a face i will buy it",
+    followers: 17400,
+    following: 240,
+    joinedAt: "2017-01-23",
+    verified: true,
+  },
+  {
+    handle: "softcosmic",
+    displayName: "soft cosmic",
+    seed: "sc",
+    bio: null,
+    followers: 233,
+    following: 199,
+    joinedAt: "2023-11-30",
+  },
 ];
 
 // INTEGRATION: X OAuth
@@ -189,11 +226,23 @@ export async function submitAllowlist(input: {
   return { ok: true, rank: 148, points: 115, allowlisted: true };
 }
 
-// INTEGRATION: GTD spin (server-authoritative).
+// INTEGRATION: daily spin (server-authoritative).
 export async function requestSpin(): Promise<SpinResult> {
   await wait(600);
-  const i = Math.floor(Math.random() * DAILY_SPIN.prizes.length);
-  return { segment: i, points: DAILY_SPIN.prizes[i] };
+  const total = DAILY_SPIN.segments.reduce((sum, s) => sum + s.weight, 0);
+  let roll = Math.random() * total;
+  let i = 0;
+  for (; i < DAILY_SPIN.segments.length; i++) {
+    roll -= DAILY_SPIN.segments[i].weight;
+    if (roll <= 0) break;
+  }
+  const seg = DAILY_SPIN.segments[Math.min(i, DAILY_SPIN.segments.length - 1)];
+  return {
+    segment: Math.min(i, DAILY_SPIN.segments.length - 1),
+    points: seg.points,
+    gtd: seg.kind === "gtd",
+    again: seg.kind === "again",
+  };
 }
 
 // INTEGRATION: share intent (pre-filled quote tweet).

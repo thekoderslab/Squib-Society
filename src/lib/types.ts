@@ -24,11 +24,23 @@ export type Task = {
   href: string;
 };
 
+/**
+ * What we read from X. Everything past `handle` is optional because the OAuth
+ * scopes we ask for are the free, read-only ones and any field can come back
+ * empty. Never render a row for a value that is not there.
+ */
 export type XAccount = {
   handle: string;
   displayName: string;
-  /** Deterministic seed for the generated avatar. */
+  /** Deterministic seed for the generated avatar fallback. */
   seed: string;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  followers?: number | null;
+  following?: number | null;
+  /** ISO date the account was created. */
+  joinedAt?: string | null;
+  verified?: boolean;
 };
 
 export type LeaderboardEntry = {
@@ -44,6 +56,10 @@ export type LeaderboardEntry = {
 export type SpinResult = {
   segment: number;
   points: number;
+  /** Landed on a guaranteed spot. */
+  gtd: boolean;
+  /** Landed on "again": the cooldown was not spent, so spin straight away. */
+  again: boolean;
 };
 
 export type SubmitResult = {
@@ -58,6 +74,8 @@ export type UserProgress = {
   tasks: Record<TaskId, TaskStatus>;
   evmAddress: string | null;
   allowlisted: boolean;
+  /** Won a guaranteed spot, either from the spin or from the snapshot. */
+  gtd: boolean;
   points: number;
   streak: number;
   /** ISO timestamp of the last daily spin, or null. */
