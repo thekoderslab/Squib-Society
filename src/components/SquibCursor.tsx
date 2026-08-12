@@ -10,36 +10,41 @@ let nextId = 0;
 
 /** Fields keep their own cursor, otherwise you lose the text caret. */
 const FIELD = "input, textarea, select, [contenteditable='true']";
-/** What a click has to land on to throw squibs. */
-const HITTABLE = "a, button, [role='button'], summary";
 
 /**
- * Site-wide squib cursor.
+ * Squibs everywhere.
  *
  * Rendered once in the root layout. It listens on `document` rather than
  * wrapping the tree, so it adds no element to the layout and cannot disturb the
- * page's flex column. Two behaviours:
+ * page's flex column.
  *
- *   1. the pointer becomes a small squib head
- *   2. clicking a link or button throws a handful of squibs out from the click,
- *      which scatter, blur and vanish
+ * Two behaviours, deliberately decoupled:
  *
- * Off entirely on touch devices and under prefers-reduced-motion. Hiding the
- * system cursor is a real cost for anyone who relies on it, so those two escape
- * hatches are not optional.
+ *   · the pointer becomes a small squib head. Desktop only, because a phone has
+ *     no cursor to replace.
+ *   · any click or tap throws a handful of squibs out from that point, which
+ *     scatter, blur and vanish. Runs on every device.
+ *
+ * Both stop under prefers-reduced-motion, and hiding the system cursor is a
+ * real cost for anyone who relies on it, so that escape hatch is not optional.
  */
 export default function SquibCursor() {
-  const [active, setActive] = useState(false);
+  /** Custom pointer: needs a fine pointer and motion allowed. */
+  const [cursorOn, setCursorOn] = useState(false);
+  /** Click burst: any device, motion allowed. */
+  const [burstOn, setBurstOn] = useState(false);
   const [visible, setVisible] = useState(false);
   const [splats, setSplats] = useState<Splat[]>([]);
   const dot = useRef<HTMLDivElement>(null);
   const frame = useRef<number | null>(null);
 
-  // Decide once whether this pointer should get the treatment at all.
   useEffect(() => {
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const decide = () => setActive(fine.matches && !calm.matches);
+    const decide = () => {
+      setBurstOn(!calm.matches);
+      setCursorOn(fine.matches && !calm.matches);
+    };
     decide();
     fine.addEventListener("change", decide);
     calm.addEventListener("change", decide);
@@ -52,13 +57,14 @@ export default function SquibCursor() {
   // Hide the system cursor only while ours is actually running.
   useEffect(() => {
     const root = document.documentElement;
-    if (active) root.classList.add("squib-cursor-on");
+    if (cursorOn) root.classList.add("squib-cursor-on");
     else root.classList.remove("squib-cursor-on");
     return () => root.classList.remove("squib-cursor-on");
-  }, [active]);
+  }, [cursorOn]);
 
+  // ── the pointer ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!active) return;
+    if (!cursorOn) return;
 
     function onMove(e: MouseEvent) {
       const target = e.target as HTMLElement | null;
@@ -76,25 +82,52 @@ export default function SquibCursor() {
       });
     }
 
-    function onLeave() {
-      setVisible(false);
-    }
+    const onLeave = () => setVisible(false);
 
+    document.addEventListener("mousemove", onMove, { passive: true });
+    document.addEventListener("mouseleave", onLeave);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseleave", onLeave);
+      if (frame.current) cancelAnimationFrame(frame.current);
+    };
+  }, [cursorOn]);
+
+  // ── the burst ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!burstOn) return;
+
+    /**
+     * `click` rather than `pointerdown` on purpose. A tap that turns into a
+     * scroll fires pointerdown but never fires click, so this way flicking
+     * down a page on a phone does not spray squibs the whole way.
+     */
     function onClick(e: MouseEvent) {
-      const target = e.target as HTMLElement | null;
-      if (!target?.closest?.(HITTABLE)) return;
+      // Touch taps report 0,0 on some browsers; fall back to the element.
+      let { clientX: x, clientY: y } = e;
+      if (!x && !y) {
+        const r = (e.target as HTMLElement | null)?.getBoundingClientRect?.();
+        if (!r) return;
+        x = r.left + r.width / 2;
+        y = r.top + r.height / 2;
+      }
 
-      const { clientX: x, clientY: y } = e;
-      const made: Splat[] = Array.from({ length: 9 }, () => {
+      // Fewer and smaller on a phone: same gesture, less to paint.
+      const small = window.innerWidth < 640;
+      const count = small ? 6 : 9;
+      const reach = small ? 90 : 130;
+      const size = small ? 22 : 26;
+
+      const made: Splat[] = Array.from({ length: count }, () => {
         const angle = Math.random() * Math.PI * 2;
-        const dist = 70 + Math.random() * 130;
+        const dist = reach * 0.55 + Math.random() * reach;
         return {
           id: nextId++,
           x,
           y,
           dx: Math.cos(angle) * dist,
           dy: Math.sin(angle) * dist - 40,
-          r: 26 + Math.random() * 34,
+          r: size + Math.random() * (small ? 22 : 34),
         };
       });
 
@@ -103,34 +136,30 @@ export default function SquibCursor() {
       window.setTimeout(() => setSplats((s) => s.filter((p) => !ids.has(p.id))), 750);
     }
 
-    document.addEventListener("mousemove", onMove, { passive: true });
-    document.addEventListener("mouseleave", onLeave);
+    // Capture phase, so it still fires on anything that stops propagation and
+    // lands before a navigation starts.
     document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [burstOn]);
 
-    return () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseleave", onLeave);
-      document.removeEventListener("click", onClick, true);
-      if (frame.current) cancelAnimationFrame(frame.current);
-    };
-  }, [active]);
-
-  if (!active) return null;
+  if (!burstOn && !cursorOn) return null;
 
   return (
     <>
-      <div
-        ref={dot}
-        aria-hidden
-        className={`pointer-events-none fixed left-0 top-0 z-[200] h-8 w-8 will-change-transform ${
-          visible ? "" : "opacity-0"
-        }`}
-        style={{
-          backgroundImage: `url(${LOGO.mark})`,
-          backgroundSize: "contain",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
+      {cursorOn ? (
+        <div
+          ref={dot}
+          aria-hidden
+          className={`pointer-events-none fixed left-0 top-0 z-[200] h-8 w-8 will-change-transform ${
+            visible ? "" : "opacity-0"
+          }`}
+          style={{
+            backgroundImage: `url(${LOGO.mark})`,
+            backgroundSize: "contain",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      ) : null}
 
       {splats.map((p) => (
         <span
