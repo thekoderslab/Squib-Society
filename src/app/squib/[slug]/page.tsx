@@ -53,10 +53,10 @@ export default async function SquibPage({ params }: { params: Promise<Params> })
     <article className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
       <nav aria-label="Breadcrumb" className="mb-8">
         <Link
-          href="/"
+          href="/squib"
           className="inline-flex items-center gap-2 text-sm text-ink/55 transition hover:text-ink"
         >
-          <span aria-hidden>←</span> Back
+          <span aria-hidden>←</span> All the squibs
         </Link>
       </nav>
 

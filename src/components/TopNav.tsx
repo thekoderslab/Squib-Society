@@ -14,6 +14,10 @@ import Wordmark from "./Wordmark";
 export default function TopNav() {
   const pathname = usePathname();
 
+  // "/" renders the allowlist, so it should light up the Allowlist link rather
+  // than leaving the whole nav looking inactive on the landing page.
+  const current = pathname === "/" ? "/allowlist" : pathname;
+
   return (
     <header className="sticky top-0 z-50 border-b-2 border-hairline bg-cream">
       <nav
@@ -27,7 +31,7 @@ export default function TopNav() {
         <div className="flex items-center gap-2">
           <ul className="mr-2 hidden items-stretch md:flex">
             {NAV_LINKS.map((l) => {
-              const active = pathname === l.href;
+              const active = current === l.href;
               return (
                 <li key={l.href}>
                   <Link
@@ -56,7 +60,7 @@ export default function TopNav() {
       <div className="border-t-2 border-hairline md:hidden">
         <ul className="mx-auto flex w-full max-w-6xl divide-x-2 divide-hairline">
           {NAV_LINKS.map((l) => {
-            const active = pathname === l.href;
+            const active = current === l.href;
             return (
               <li key={l.href} className="flex-1">
                 <Link
