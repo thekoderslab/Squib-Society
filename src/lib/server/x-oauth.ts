@@ -55,11 +55,18 @@ export async function challengeFor(verifier: string): Promise<string> {
 }
 
 /**
- * The origin X will redirect back to. Built from the proxy headers rather than
- * a hardcoded constant so the value matches whichever host actually served the
- * request. It must equal a callback URL registered on the X app exactly.
+ * The origin X will redirect back to. It must equal a callback URL registered
+ * on the X app EXACTLY, so APP_URL wins when it is set.
+ *
+ * Deriving it from the request host is convenient but fragile: a visitor on
+ * www.example.com and one on example.com produce two different redirect_uri
+ * values, and X rejects whichever is not registered. Setting APP_URL to the
+ * canonical origin makes it one value regardless of how the user arrived.
  */
 export function originOf(request: Request): string {
+  const configured = process.env.APP_URL?.trim().replace(/\/+$/, "");
+  if (configured) return configured;
+
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   if (host) return `${proto}://${host}`;
