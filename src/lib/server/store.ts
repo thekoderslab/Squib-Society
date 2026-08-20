@@ -88,7 +88,7 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
       .maybeSingle(),
     db
       .from("streaks")
-      .select("current_streak, last_check_in")
+      .select("current_streak")
       .eq("profile_id", profileId)
       .maybeSingle(),
     db
@@ -125,9 +125,7 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
   const entry = entryRes.data as
     | { evm_address: string; gtd: boolean }
     | null;
-  const streak = streakRes.data as
-    | { current_streak: number; last_check_in: string | null }
-    | null;
+  const streak = streakRes.data as { current_streak: number } | null;
   const ledger = (ledgerRes.data ?? []) as LedgerRow[];
 
   const hasKind = (kind: string) => ledger.some((r) => r.kind === kind);
