@@ -41,10 +41,32 @@ function classify(message: string): string {
   return "server_error";
 }
 
+/**
+ * Pull the object name out of a Postgres "does not exist" message so the
+ * operator is told WHICH table or function is missing.
+ *
+ * Only ever attached to configuration errors. Table names are not secrets:
+ * RLS is on with no policies and EXECUTE is revoked from PUBLIC, so knowing a
+ * name buys an attacker nothing, and the alternative is reading logs to find a
+ * typo.
+ */
+function missingObject(message: string): string | undefined {
+  const quoted = message.match(/"([a-z_.]+)"/i)?.[1];
+  const fn = message.match(/function\s+([a-z_.]+)\s*\(/i)?.[1];
+  return fn ?? quoted;
+}
+
 export function serverError(e: unknown) {
   const message = e instanceof Error ? e.message : "unknown error";
   console.error("[squib-api]", message);
-  return NextResponse.json({ error: classify(message) }, { status: 500 });
+
+  const error = classify(message);
+  const body: { error: string; missing?: string } = { error };
+  if (error === "schema_missing") {
+    const missing = missingObject(message);
+    if (missing) body.missing = missing;
+  }
+  return NextResponse.json(body, { status: 500 });
 }
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;

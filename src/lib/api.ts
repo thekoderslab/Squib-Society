@@ -33,6 +33,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public code: string,
+    /** For schema_missing: the object Postgres could not find. */
+    public missing?: string,
   ) {
     super(code);
     this.name = "ApiError";
@@ -62,8 +64,15 @@ async function call<T>(path: string, init?: RequestInit): Promise<T | null> {
   backend = "supabase";
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(res.status, body.error ?? `http_${res.status}`);
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      missing?: string;
+    };
+    throw new ApiError(
+      res.status,
+      body.error ?? `http_${res.status}`,
+      body.missing,
+    );
   }
   return (await res.json()) as T;
 }

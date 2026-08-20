@@ -70,7 +70,9 @@ export default function AllowlistFunnel() {
           : code === "rate_limited"
           ? "Too many attempts from your network. Give it an hour and try again."
           : code === "schema_missing"
-            ? "Setup: the database tables are missing. Run supabase/schema.sql."
+            ? `Setup: the database is missing ${
+                (err instanceof ApiError && err.missing) || "an object"
+              }. Re-run supabase/schema.sql.`
             : code === "bad_service_key"
               ? "Setup: SUPABASE_SERVICE_ROLE_KEY is wrong or expired."
               : "Could not reach X just then. Try again in a moment.",
