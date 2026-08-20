@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 import type { XAccount } from "@/lib/types";
 import Avatar from "../art/Avatar";
 import { XLogo } from "./icons";
@@ -46,17 +44,11 @@ export default function XProfileCard({
       </div>
 
       <div className="mt-4">
-        {account.avatarUrl ? (
-          <Image
-            src={account.avatarUrl}
-            alt=""
-            width={96}
-            height={96}
-            className="h-20 w-20 border-2 border-hairline object-cover"
-          />
-        ) : (
-          <Avatar handle={account.handle} className="h-20 w-20" />
-        )}
+        <Avatar
+          handle={account.handle}
+          src={account.avatarUrl}
+          className="h-20 w-20"
+        />
       </div>
 
       <p className="mt-4 flex items-center gap-1.5 font-display text-lg font-bold leading-tight">

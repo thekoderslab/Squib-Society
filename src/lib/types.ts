@@ -47,6 +47,8 @@ export type LeaderboardEntry = {
   rank: number;
   handle: string;
   displayName: string;
+  /** X profile picture. Null for anyone whose profile predates it. */
+  avatarUrl?: string | null;
   points: number;
   streak: number;
   isYou?: boolean;

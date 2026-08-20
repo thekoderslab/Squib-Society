@@ -18,7 +18,7 @@ const READS: { table: string; columns: string }[] = [
   { table: "points_ledger", columns: "id, profile_id, kind, points, day, meta, created_at" },
   { table: "streaks", columns: "profile_id, current_streak, longest_streak, last_spin_at" },
   { table: "rate_limits", columns: "bucket, hits, window_start" },
-  { table: "leaderboard", columns: "profile_id, handle, display_name, points, streak, joined_at" },
+  { table: "leaderboard", columns: "profile_id, handle, display_name, avatar_url, points, streak, joined_at" },
 ];
 
 /**

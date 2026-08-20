@@ -336,7 +336,7 @@ export async function getLeaderboardRows(limit = 50): Promise<LeaderboardEntry[]
   const db = admin();
   const { data, error } = await db
     .from("leaderboard")
-    .select("profile_id, handle, display_name, points, streak")
+    .select("profile_id, handle, display_name, avatar_url, points, streak")
     .order("points", { ascending: false })
     .order("handle", { ascending: true })
     .limit(limit);
@@ -346,6 +346,7 @@ export async function getLeaderboardRows(limit = 50): Promise<LeaderboardEntry[]
     profile_id: string;
     handle: string;
     display_name: string | null;
+    avatar_url: string | null;
     points: number;
     streak: number;
   }[];
@@ -354,6 +355,7 @@ export async function getLeaderboardRows(limit = 50): Promise<LeaderboardEntry[]
     rank: i + 1,
     handle: r.handle,
     displayName: r.display_name ?? r.handle,
+    avatarUrl: r.avatar_url,
     points: Number(r.points),
     streak: Number(r.streak),
   }));

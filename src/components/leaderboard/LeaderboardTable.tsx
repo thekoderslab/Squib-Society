@@ -112,7 +112,7 @@ function Row({ entry, pinned }: { entry: LeaderboardEntry; pinned?: boolean }) {
       </span>
 
       <span className="flex min-w-0 items-center gap-2.5">
-        <Avatar handle={entry.handle} className="h-8 w-8" />
+        <Avatar handle={entry.handle} src={entry.avatarUrl} className="h-8 w-8" />
         <span className="min-w-0">
           <span className="flex items-center gap-1.5">
             <span className="truncate text-sm font-medium">

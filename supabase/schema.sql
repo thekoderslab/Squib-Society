@@ -113,13 +113,15 @@ create or replace view public.leaderboard as
     p.id                                as profile_id,
     p.handle,
     p.display_name,
+    p.avatar_url,
     coalesce(sum(l.points), 0)::integer as points,
     coalesce(s.current_streak, 0)       as streak,
     p.created_at                        as joined_at
   from public.profiles p
   left join public.points_ledger l on l.profile_id = p.id
   left join public.streaks s       on s.profile_id = p.id
-  group by p.id, p.handle, p.display_name, p.created_at, s.current_streak;
+  group by p.id, p.handle, p.display_name, p.avatar_url, p.created_at,
+           s.current_streak;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Functions. Point VALUES are passed in from the app so constants.ts stays the

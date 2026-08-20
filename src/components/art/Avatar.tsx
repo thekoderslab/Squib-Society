@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 /**
  * Generated squib-head avatars, derived from the handle. Beats grey initials
  * on a page about character toys, and keeps the palette disciplined: every
@@ -23,11 +25,27 @@ function hash(s: string): number {
 
 export default function Avatar({
   handle,
+  src,
   className = "h-8 w-8",
 }: {
   handle: string;
+  /** Real X profile picture. Falls back to the generated head when absent. */
+  src?: string | null;
   className?: string;
 }) {
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt=""
+        width={96}
+        height={96}
+        aria-hidden
+        className={`shrink-0 border-2 border-hairline object-cover ${className}`}
+      />
+    );
+  }
+
   const h = hash(handle);
   const [bg, fg] = TINTS[h % TINTS.length];
   const tilt = ((h >> 3) % 5) - 2;
