@@ -62,9 +62,12 @@ export function serverError(e: unknown) {
 
   const error = classify(message);
   const body: { error: string; missing?: string } = { error };
+
+  // For setup errors, hand back what Postgres actually said. Regexing the
+  // object name out is fragile: a missing table is quoted, a missing column is
+  // not. These messages only ever name schema objects, never data.
   if (error === "schema_missing") {
-    const missing = missingObject(message);
-    if (missing) body.missing = missing;
+    body.missing = missingObject(message) ?? message.slice(0, 200);
   }
   return NextResponse.json(body, { status: 500 });
 }
