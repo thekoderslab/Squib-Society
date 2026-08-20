@@ -28,7 +28,9 @@ export default function CatchTheSquib() {
   const [phase, setPhase] = useState<"idle" | "playing" | "over">("idle");
   const [active, setActive] = useState<number | null>(null);
   const [score, setScore] = useState(0);
-  const [left, setLeft] = useState(GAME.roundSeconds);
+  // Annotated: GAME is `as const`, so the seed's type is the literal 20 and
+  // an unannotated useState would refuse every decrement.
+  const [left, setLeft] = useState<number>(GAME.roundSeconds);
   const [awarded, setAwarded] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const caught = useRef(false);

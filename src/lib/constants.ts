@@ -60,14 +60,21 @@ export const NAV_LINKS = [
   { label: "Leaderboard", href: "/leaderboard" },
 ] as const;
 
-/** Catch the squib. Same 24 hour rolling cooldown as the spin. */
+/**
+ * Catch the squib. Same 24 hour rolling cooldown as the spin.
+ *
+ * Deliberately NOT `as const`: these are numbers that get decremented, seeded
+ * into state and used in arithmetic. A const assertion would give them literal
+ * types, so `useState(GAME.roundSeconds)` would infer state of type `20` and
+ * refuse every decrement.
+ */
 export const GAME = {
   cooldownHours: 24,
   roundSeconds: 20,
   cells: 9,
   /** How long a squib stays up before ducking back down. */
   popMs: 900,
-} as const;
+};
 
 export type SpinSegment = {
   kind: "points" | "gtd" | "again";
@@ -101,7 +108,7 @@ export const DAILY_SPIN = {
     { kind: "points", points: 250, label: "250", weight: 3 },
     { kind: "points", points: 10, label: "10", weight: 18 },
   ] as SpinSegment[],
-} as const;
+};
 
 /** localStorage key for the mocked user session. Bump the suffix to reset. */
 export const STORAGE_KEY = "squib-society/progress/v2";
