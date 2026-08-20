@@ -13,7 +13,7 @@ export default function Hero() {
         max() keeps it at the plain mobile gutter on narrow screens, where
         (100vw - 72rem) is negative.
       */}
-      <div className="grid w-full gap-0 lg:grid-cols-[1.05fr_1fr]">
+      <div className="grid w-full gap-0 lg:grid-cols-[65%_35%]">
         <Reveal className="flex flex-col justify-center border-hairline py-10 pl-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))] pr-5 sm:py-14 sm:pl-[max(2rem,calc((100vw-72rem)/2+2rem))] sm:pr-10 lg:border-r-2">
           <div>
             <p className="stamp inline-flex items-center gap-2 border-2 border-hairline bg-squib px-2.5 py-1 text-ink">
