@@ -25,6 +25,9 @@ export function badRequest(error: string) {
  */
 function classify(message: string): string {
   const m = message.toLowerCase();
+  // Thrown by session.ts. Almost always means the deployment predates the
+  // variable being added, since Vercel binds env at deploy time.
+  if (m.includes("session_secret")) return "missing_session_secret";
   if (m.includes("does not exist") || m.includes("could not find the function")) {
     return "schema_missing";
   }

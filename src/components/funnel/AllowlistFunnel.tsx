@@ -65,7 +65,9 @@ export default function AllowlistFunnel() {
       // and the button looks like it did not register the click at all.
       const code = err instanceof ApiError ? err.code : "";
       setConnectError(
-        code === "rate_limited"
+        code === "missing_session_secret"
+          ? "Setup: SESSION_SECRET is not set on this deployment. Add it and redeploy."
+          : code === "rate_limited"
           ? "Too many attempts from your network. Give it an hour and try again."
           : code === "schema_missing"
             ? "Setup: the database tables are missing. Run supabase/schema.sql."
