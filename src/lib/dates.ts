@@ -36,3 +36,18 @@ export function recentDays(n: number, from = new Date()): string[] {
 export function formatNumber(n: number): string {
   return n.toLocaleString("en-US");
 }
+
+/** HH:MM:SS remaining. Clamped at zero so it never shows a negative clock. */
+export function formatCountdown(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
+}
+
+/** When a cooldown that started at `iso` expires, or null if it never ran. */
+export function readyAt(iso: string | null, hours: number): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : t + hours * 3600_000;
+}

@@ -12,7 +12,6 @@ import {
 
 import { fetchMe } from "@/lib/api";
 import { POINTS, STORAGE_KEY } from "@/lib/constants";
-import { localDayKey } from "@/lib/dates";
 import type { TaskId, TaskStatus, UserProgress, XAccount } from "@/lib/types";
 
 const EMPTY: UserProgress = {
@@ -24,7 +23,7 @@ const EMPTY: UserProgress = {
   points: 0,
   streak: 0,
   lastSpinAt: null,
-  gamePlayedOn: null,
+  lastGameAt: null,
   gameBest: 0,
 };
 
@@ -152,22 +151,16 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   const recordGame = useCallback(
     (score: number): number => {
-      const today = localDayKey();
-      if (progress.gamePlayedOn === today) return 0;
       const awarded = Math.min(score * POINTS.gamePerCatch, POINTS.gameDailyCap);
-      patch((p) =>
-        p.gamePlayedOn === today
-          ? p
-          : {
-              ...p,
-              gamePlayedOn: today,
-              gameBest: Math.max(p.gameBest, score),
-              points: p.points + awarded,
-            },
-      );
+      patch((p) => ({
+        ...p,
+        lastGameAt: new Date().toISOString(),
+        gameBest: Math.max(p.gameBest, score),
+        points: p.points + awarded,
+      }));
       return awarded;
     },
-    [patch, progress.gamePlayedOn],
+    [patch],
   );
 
   const reset = useCallback(() => setProgress(EMPTY), []);

@@ -33,21 +33,23 @@ export default function SquibSlider() {
   const squib = SQUIBS[i];
 
   return (
-    <div className="relative h-full bg-surface">
-      <div className="relative">
+    <div className="flex h-full flex-col bg-surface">
+      {/* flex-1 + object-cover: the column is as tall as the copy beside it, and
+          any spare height goes to the picture instead of pooling underneath. */}
+      <div className="relative min-h-[340px] flex-1">
         {/* All slides stay mounted so the browser keeps them decoded and the
             change is instant rather than a flash of empty frame. */}
         {SQUIBS.map((s, index) => (
           <div
             key={s.slug}
             aria-hidden={index !== i}
-            className={index === i ? "block" : "hidden"}
+            className={index === i ? "absolute inset-0" : "hidden"}
           >
             <SquibPhoto
               squib={s}
               priority={index === 0}
               sizes="(max-width: 1024px) 100vw, 560px"
-              className="h-auto w-full"
+              className="h-full w-full object-cover"
             />
           </div>
         ))}

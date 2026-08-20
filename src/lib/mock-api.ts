@@ -87,8 +87,8 @@ export const SQUIBS: Squib[] = [
     bio: "Owns one jacket. Wears it everywhere. Has never once been cold, or wrong.",
   },
   {
-    slug: "paper-planet",
-    name: "Paper Planet",
+    slug: "tma-squib",
+    name: "TMA Squib",
     role: "Incognito",
     photo: "/squibs/0368-paper-planet-squib.png",
     scene: "Toy room",

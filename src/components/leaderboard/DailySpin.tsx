@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { requestSpin } from "@/lib/api";
 import { DAILY_SPIN } from "@/lib/constants";
+import { formatCountdown, readyAt } from "@/lib/dates";
 import { useProgress } from "@/state/progress";
 import Button from "../ui/Button";
 import Chip from "../ui/Chip";
@@ -12,20 +13,6 @@ import { XLogo } from "../funnel/icons";
 
 const SEGMENTS = DAILY_SPIN.segments;
 const SEG_DEG = 360 / SEGMENTS.length;
-const COOLDOWN_MS = DAILY_SPIN.cooldownHours * 60 * 60 * 1000;
-
-function readyAt(lastSpinAt: string | null): number | null {
-  if (!lastSpinAt) return null;
-  const t = Date.parse(lastSpinAt);
-  return Number.isNaN(t) ? null : t + COOLDOWN_MS;
-}
-
-function formatLeft(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60]
-    .map((n) => String(n).padStart(2, "0"))
-    .join(":");
-}
 
 type Outcome = { points: number; gtd: boolean; again: boolean };
 
@@ -47,7 +34,7 @@ export default function DailySpin() {
   const [now, setNow] = useState(() => Date.now());
 
   const connected = !!progress.x;
-  const ready = readyAt(progress.lastSpinAt);
+  const ready = readyAt(progress.lastSpinAt, DAILY_SPIN.cooldownHours);
   const locked = hydrated && ready !== null && ready > now;
 
   useEffect(() => {
@@ -90,7 +77,7 @@ export default function DailySpin() {
         <p className="stamp text-squib-deep">Daily spin</p>
         {locked ? (
           <Chip tone="neutral" className="tabular">
-            {formatLeft(ready! - now)}
+            {formatCountdown(ready! - now)}
           </Chip>
         ) : (
           <Chip tone="outline">Once a day</Chip>
@@ -207,7 +194,7 @@ export default function DailySpin() {
           <p className="text-sm leading-relaxed text-ink/60">
             You have had your spin. The wheel opens again in{" "}
             <span className="font-mono font-bold tabular">
-              {formatLeft(ready! - now)}
+              {formatCountdown(ready! - now)}
             </span>
             .
           </p>

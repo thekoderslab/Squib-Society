@@ -45,6 +45,12 @@ export const LOGO = {
   badge: "/logo/squib-logo-lime-ccff00.png",
 } as const;
 
+/**
+ * Hidden form field. Humans never fill it, naive form-filling bots always do.
+ * Shared here so the client and the route handler agree on the name.
+ */
+export const HONEYPOT_FIELD = "squib_website";
+
 export const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 
 export const NAV_LINKS = [
@@ -53,6 +59,15 @@ export const NAV_LINKS = [
   { label: "Allowlist", href: "/allowlist" },
   { label: "Leaderboard", href: "/leaderboard" },
 ] as const;
+
+/** Catch the squib. Same 24 hour rolling cooldown as the spin. */
+export const GAME = {
+  cooldownHours: 24,
+  roundSeconds: 20,
+  cells: 9,
+  /** How long a squib stays up before ducking back down. */
+  popMs: 900,
+} as const;
 
 export type SpinSegment = {
   kind: "points" | "gtd" | "again";
@@ -89,4 +104,4 @@ export const DAILY_SPIN = {
 } as const;
 
 /** localStorage key for the mocked user session. Bump the suffix to reset. */
-export const STORAGE_KEY = "squib-society/progress/v1";
+export const STORAGE_KEY = "squib-society/progress/v2";

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { TaskId } from "@/lib/types";
+import { limitByProfile } from "@/lib/server/guard";
 import { badRequest, notConfigured, serverError, unauthorized } from "@/lib/server/respond";
 import { getSessionProfileId } from "@/lib/server/session";
 import { awardTask, getUserState } from "@/lib/server/store";
@@ -16,6 +17,12 @@ export async function POST(request: Request) {
   try {
     const profileId = await getSessionProfileId();
     if (!profileId) return unauthorized();
+
+    const limited = await limitByProfile(profileId, "tasks", {
+      limit: 30,
+      windowSeconds: 600,
+    });
+    if (limited) return limited;
 
     const body = (await request.json().catch(() => ({}))) as { taskId?: string };
     const taskId = VALID.find((t) => t === body.taskId);

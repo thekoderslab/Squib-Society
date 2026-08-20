@@ -80,7 +80,7 @@ export type UserProgress = {
   streak: number;
   /** ISO timestamp of the last daily spin, or null. */
   lastSpinAt: string | null;
-  /** YYYY-MM-DD in the user's local timezone, or null. */
-  gamePlayedOn: string | null;
+  /** ISO timestamp of the last completed game, or null. */
+  lastGameAt: string | null;
   gameBest: number;
 };

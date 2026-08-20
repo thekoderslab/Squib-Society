@@ -9,7 +9,7 @@ const PICKS = [
   "fox-winter",
   "lotus",
   "warden",
-  "paper-planet",
+  "tma-squib",
   "sprite",
   "drifter",
 ];

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { limitByIp } from "@/lib/server/guard";
 import { notConfigured, serverError } from "@/lib/server/respond";
 import { clearSession, setSession } from "@/lib/server/session";
 import { upsertProfile } from "@/lib/server/store";
@@ -23,8 +24,13 @@ const MOCK_ACCOUNTS = [
   { handle: "softcosmic", displayName: "soft cosmic" },
 ];
 
-export async function POST() {
+export async function POST(request: Request) {
   if (!supabaseConfigured) return notConfigured();
+
+  // Connecting is what mints a profile row, so this is the route a bot would
+  // hammer first. Tight cap per address.
+  const limited = await limitByIp(request, "session", { limit: 8, windowSeconds: 3600 });
+  if (limited) return limited;
 
   try {
     // ── replace this block with the real OAuth exchange ──────────────────

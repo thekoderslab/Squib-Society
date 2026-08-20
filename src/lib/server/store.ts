@@ -75,7 +75,7 @@ export async function getProfile(id: string): Promise<ProfileRow | null> {
 export async function getUserState(profileId: string): Promise<UserProgress> {
   const db = admin();
 
-  const [profileRes, entryRes, streakRes, ledgerRes, spinRes] = await Promise.all([
+  const [profileRes, entryRes, streakRes, ledgerRes, spinRes, gameRes] = await Promise.all([
     db
       .from("profiles")
       .select("handle, display_name")
@@ -83,7 +83,7 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
       .maybeSingle(),
     db
       .from("allowlist_entries")
-      .select("evm_address, gtd, spin_used")
+      .select("evm_address, gtd")
       .eq("profile_id", profileId)
       .maybeSingle(),
     db
@@ -95,12 +95,20 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
       .from("points_ledger")
       .select("kind, points, day, meta")
       .eq("profile_id", profileId),
-    // Most recent spin, for the 24 hour cooldown clock.
+    // Most recent spin and game, for the two 24 hour cooldown clocks.
     db
       .from("points_ledger")
       .select("created_at")
       .eq("profile_id", profileId)
       .eq("kind", "spin")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("points_ledger")
+      .select("created_at")
+      .eq("profile_id", profileId)
+      .eq("kind", "game")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -111,27 +119,24 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
   if (streakRes.error) fail("getUserState/streak", streakRes.error);
   if (ledgerRes.error) fail("getUserState/ledger", ledgerRes.error);
   if (spinRes.error) fail("getUserState/spin", spinRes.error);
+  if (gameRes.error) fail("getUserState/game", gameRes.error);
 
   const profile = profileRes.data as { handle: string; display_name: string | null } | null;
   const entry = entryRes.data as
-    | { evm_address: string; gtd: boolean; spin_used: boolean }
+    | { evm_address: string; gtd: boolean }
     | null;
   const streak = streakRes.data as
     | { current_streak: number; last_check_in: string | null }
     | null;
   const ledger = (ledgerRes.data ?? []) as LedgerRow[];
 
-  const latestDay = (kind: string): string | null =>
-    ledger
-      .filter((r) => r.kind === kind && r.day)
-      .map((r) => r.day as string)
-      .sort()
-      .pop() ?? null;
-
   const hasKind = (kind: string) => ledger.some((r) => r.kind === kind);
 
   const lastSpinAt = spinRes.data
     ? (spinRes.data as { created_at: string }).created_at
+    : null;
+  const lastGameAt = gameRes.data
+    ? (gameRes.data as { created_at: string }).created_at
     : null;
 
   const gameBest = ledger
@@ -159,7 +164,7 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
     // Streak here is "spins taken", which is what the flame on the board means.
     streak: streak?.current_streak ?? 0,
     lastSpinAt: lastSpinAt ?? null,
-    gamePlayedOn: latestDay("game"),
+    lastGameAt,
     gameBest,
   };
 }
@@ -226,7 +231,36 @@ export async function dailySpin(input: {
   return {
     applied: Boolean(row?.applied),
     awarded: Number(row?.awarded ?? 0),
-    gtd: Boolean(row?.gtd),
+    gtd: Boolean(row?.won_gtd),
+    nextAt: (row?.next_at as string | null) ?? null,
+  };
+}
+
+/**
+ * Award on a rolling cooldown measured from the last award of that kind.
+ * Returns applied:false when the caller is still inside the window.
+ */
+export async function cooldownAward(input: {
+  profileId: string;
+  kind: "game";
+  points: number;
+  cooldownHours: number;
+  meta?: Record<string, unknown>;
+}): Promise<{ applied: boolean; awarded: number; nextAt: string | null }> {
+  const db = admin();
+  const { data, error } = await db.rpc("cooldown_award", {
+    p_profile: input.profileId,
+    p_kind: input.kind,
+    p_points: input.points,
+    p_cooldown_hours: input.cooldownHours,
+    p_meta: input.meta ?? {},
+  });
+  if (error) fail("cooldownAward", error);
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    applied: Boolean(row?.applied),
+    awarded: Number(row?.awarded ?? 0),
     nextAt: (row?.next_at as string | null) ?? null,
   };
 }

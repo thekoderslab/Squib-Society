@@ -10,7 +10,7 @@ import {
   submitAllowlist,
   verifyTask,
 } from "@/lib/api";
-import { EVM_ADDRESS_RE, POINTS } from "@/lib/constants";
+import { EVM_ADDRESS_RE, HONEYPOT_FIELD, POINTS } from "@/lib/constants";
 import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Button, { Spinner } from "../ui/Button";
@@ -37,12 +37,14 @@ export default function AllowlistFunnel() {
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const addressId = useId();
   const errorId = `${addressId}-error`;
+  const honeypotId = `${addressId}-hp`;
 
   const connected = !!progress.x;
   const alreadyIn = hydrated && progress.allowlisted;
@@ -87,6 +89,7 @@ export default function AllowlistFunnel() {
         handle: progress.x.handle,
         evmAddress: address.trim(),
         captchaToken: "mock-captcha-token",
+        honeypot,
       });
 
       if (res.progress) applyServerProgress(res.progress);
@@ -185,6 +188,21 @@ export default function AllowlistFunnel() {
               dimmed={!baseTasksDone}
             >
               <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                {/* Honeypot. Hidden from people and from screen readers, but
+                    present in the DOM for anything filling fields blindly. */}
+                <div aria-hidden className="absolute h-0 w-0 overflow-hidden">
+                  <label htmlFor={honeypotId}>Leave this empty</label>
+                  <input
+                    id={honeypotId}
+                    name={HONEYPOT_FIELD}
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                  />
+                </div>
+
                 <div>
                   <label htmlFor={addressId} className="sr-only">
                     EVM address

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { DAILY_SPIN } from "@/lib/constants";
+import { limitByProfile } from "@/lib/server/guard";
 import { notConfigured, serverError, unauthorized } from "@/lib/server/respond";
 import { getSessionProfileId } from "@/lib/server/session";
 import { dailySpin, getUserState } from "@/lib/server/store";
@@ -38,6 +39,14 @@ export async function POST() {
   try {
     const profileId = await getSessionProfileId();
     if (!profileId) return unauthorized();
+
+    // daily_spin already enforces the cooldown. This stops someone burning
+    // database round trips trying to force a favourable segment.
+    const limited = await limitByProfile(profileId, "spin", {
+      limit: 20,
+      windowSeconds: 600,
+    });
+    if (limited) return limited;
 
     const segment = pickSegment();
     const seg = DAILY_SPIN.segments[segment];

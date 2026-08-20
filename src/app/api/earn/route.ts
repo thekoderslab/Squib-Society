@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { POINTS } from "@/lib/constants";
+import { GAME, POINTS } from "@/lib/constants";
 import {
   badRequest,
   notConfigured,
@@ -8,8 +8,9 @@ import {
   serverError,
   unauthorized,
 } from "@/lib/server/respond";
+import { limitByProfile } from "@/lib/server/guard";
 import { getSessionProfileId } from "@/lib/server/session";
-import { awardDaily, getUserState } from "@/lib/server/store";
+import { awardDaily, cooldownAward, getUserState } from "@/lib/server/store";
 import { supabaseConfigured } from "@/lib/server/supabase";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,12 @@ export async function POST(request: Request) {
     const profileId = await getSessionProfileId();
     if (!profileId) return unauthorized();
 
+    const limited = await limitByProfile(profileId, "earn", {
+      limit: 30,
+      windowSeconds: 600,
+    });
+    if (limited) return limited;
+
     const body = (await request.json().catch(() => ({}))) as Body;
     const day = safeDay(body.day);
     if (!day) return badRequest("bad_day");
@@ -37,10 +44,23 @@ export async function POST(request: Request) {
     switch (body.kind) {
       case "game": {
         // The score is re-scored and capped here. A tampered score cannot mint
-        // more than the daily cap.
+        // more than the cap, and the cooldown is enforced in Postgres.
         const score = Math.max(0, Math.min(200, Math.floor(Number(body.score ?? 0))));
         const points = Math.min(score * POINTS.gamePerCatch, POINTS.gameDailyCap);
-        awarded = await awardDaily(profileId, "game", points, day, { score });
+        const res = await cooldownAward({
+          profileId,
+          kind: "game",
+          points,
+          cooldownHours: GAME.cooldownHours,
+          meta: { score },
+        });
+        if (!res.applied) {
+          return NextResponse.json(
+            { error: "cooldown", nextAt: res.nextAt },
+            { status: 429 },
+          );
+        }
+        awarded = res.awarded;
         break;
       }
       case "share":

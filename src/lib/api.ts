@@ -13,6 +13,7 @@
  * with no code change and no feature flag to remember.
  */
 
+import { HONEYPOT_FIELD } from "./constants";
 import * as mock from "./mock-api";
 import type {
   LeaderboardEntry,
@@ -123,6 +124,7 @@ export async function submitAllowlist(input: {
   handle: string;
   evmAddress: string;
   captchaToken: string;
+  honeypot?: string;
 }): Promise<{ rank: number; points: number; progress: UserProgress | null }> {
   const res = await call<{ rank: number; points: number; progress: UserProgress }>(
     "/api/allowlist",
@@ -131,6 +133,7 @@ export async function submitAllowlist(input: {
       body: JSON.stringify({
         evmAddress: input.evmAddress,
         captchaToken: input.captchaToken,
+        [HONEYPOT_FIELD]: input.honeypot ?? "",
       }),
     },
   );
