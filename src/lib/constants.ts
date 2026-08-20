@@ -76,6 +76,17 @@ export const GAME = {
   popMs: 900,
 };
 
+/**
+ * The task row flow. Plain object, not `as const`: these are numbers that get
+ * decremented and seeded into state.
+ */
+export const TASK_FLOW = {
+  /** How long the Go button waits before it turns into Verify. */
+  goWaitSeconds: 10,
+  /** Floor on how long a verification takes, so it reads as work being done. */
+  verifyMs: 2000,
+};
+
 export type SpinSegment = {
   kind: "points" | "gtd" | "again";
   points: number;

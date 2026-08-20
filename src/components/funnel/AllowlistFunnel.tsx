@@ -10,7 +10,7 @@ import {
   submitAllowlist,
   verifyTask,
 } from "@/lib/api";
-import { EVM_ADDRESS_RE, HONEYPOT_FIELD, POINTS } from "@/lib/constants";
+import { EVM_ADDRESS_RE, HONEYPOT_FIELD, POINTS, TASK_FLOW } from "@/lib/constants";
 import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Button, { LinkButton, Spinner } from "../ui/Button";
@@ -375,19 +375,47 @@ function TaskRow({
   const done = status === "done";
   const busy = status === "verifying";
 
+  /**
+   * Go, wait, verify.
+   *
+   * Verify is not offered until the tab has been open a while, because a
+   * button that says Verify the instant you arrive invites people to press it
+   * without doing anything, then wonder why nothing happened. The wait is
+   * honest friction: it is roughly how long the task actually takes.
+   */
+  const [went, setWent] = useState(false);
+  const [left, setLeft] = useState<number>(TASK_FLOW.goWaitSeconds);
+
+  useEffect(() => {
+    if (!went || left <= 0) return;
+    const t = window.setInterval(() => setLeft((n) => Math.max(0, n - 1)), 1000);
+    return () => window.clearInterval(t);
+  }, [went, left]);
+
+  function handleGo() {
+    // noopener matters: without it the new tab gets a handle on this one via
+    // window.opener and could navigate it somewhere else.
+    window.open(task.href, "_blank", "noopener,noreferrer");
+    setWent(true);
+  }
+
   async function handleVerify() {
     onStatus("verifying");
     try {
-      // INTEGRATION: task verification (Zealy / Galxe / TaskOn, or the X API)
-      const { verified, progress } = await verifyTask(task.id);
-      // In Supabase mode the award already happened server side and the fresh
-      // state comes back with it. Locally we set the status ourselves.
+      // INTEGRATION: task verification (Zealy / Galxe / TaskOn, or the X API).
+      // Held to a floor so the check reads as work rather than a flicker.
+      const [{ verified, progress }] = await Promise.all([
+        verifyTask(task.id),
+        new Promise<void>((r) => setTimeout(r, TASK_FLOW.verifyMs)),
+      ]);
       if (progress) onServerProgress(progress);
       else onStatus(verified ? "done" : "pending");
     } catch {
       onStatus("pending");
     }
   }
+
+  const ready = went && left <= 0;
 
   return (
     <li
@@ -423,15 +451,18 @@ function TaskRow({
           <span aria-hidden>·</span>
           {locked ? (
             <span>Finish the one above first</span>
-          ) : (
-            <a
-              href={task.href}
-              target="_blank"
-              rel="noopener noreferrer"
+          ) : done ? (
+            <span>Nice one</span>
+          ) : went ? (
+            <button
+              type="button"
+              onClick={handleGo}
               className="inline-flex items-center gap-1 underline underline-offset-4 transition hover:text-ink"
             >
-              Open on X <ExternalIcon className="h-3 w-3" />
-            </a>
+              Open again <ExternalIcon className="h-3 w-3" />
+            </button>
+          ) : (
+            <span>Opens X in a new tab</span>
           )}
         </span>
       </span>
@@ -440,15 +471,35 @@ function TaskRow({
         <Chip tone="green">
           <Check /> Done
         </Chip>
+      ) : locked ? (
+        <span className="inline-flex h-8 shrink-0 items-center gap-1.5 border-2 border-hairline bg-locked px-3 font-display text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+          Locked
+        </span>
+      ) : !went ? (
+        <button
+          type="button"
+          onClick={handleGo}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 border-2 border-hairline bg-squib px-4 font-display text-[11px] font-semibold uppercase tracking-wide shadow-card transition hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-lift active:translate-x-0 active:translate-y-0"
+        >
+          Go
+          <ExternalIcon className="h-3 w-3" />
+        </button>
+      ) : !ready ? (
+        <span
+          aria-live="polite"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 border-2 border-hairline bg-cream px-3 font-mono text-[11px] font-bold tabular text-ink/55"
+        >
+          {left}s
+        </span>
       ) : (
         <button
           type="button"
           onClick={handleVerify}
-          disabled={locked || busy}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 border-2 border-hairline bg-surface px-3 font-display text-[11px] font-semibold uppercase tracking-wide transition hover:bg-ink hover:text-cream disabled:pointer-events-none disabled:opacity-40"
+          disabled={busy}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 border-2 border-hairline bg-surface px-3 font-display text-[11px] font-semibold uppercase tracking-wide transition hover:bg-ink hover:text-cream disabled:pointer-events-none disabled:opacity-60"
         >
           {busy ? <Spinner className="h-3 w-3" /> : null}
-          {busy ? "Checking" : locked ? "Locked" : "Verify"}
+          {busy ? "Checking" : "Verify"}
         </button>
       )}
     </li>
