@@ -37,6 +37,8 @@ export async function upsertProfile(input: {
   handle: string;
   displayName: string;
   avatarUrl?: string | null;
+  /** ISO date the X account was created, for the account-age rule. */
+  xCreatedAt?: string | null;
 }): Promise<ProfileRow> {
   const db = admin();
   const { data, error } = await db
@@ -47,6 +49,7 @@ export async function upsertProfile(input: {
         handle: input.handle,
         display_name: input.displayName,
         avatar_url: input.avatarUrl ?? null,
+        x_created_at: input.xCreatedAt ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "x_user_id" },
@@ -78,7 +81,7 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
   const [profileRes, entryRes, streakRes, ledgerRes, spinRes, gameRes] = await Promise.all([
     db
       .from("profiles")
-      .select("handle, display_name")
+      .select("handle, display_name, avatar_url, x_created_at")
       .eq("id", profileId)
       .maybeSingle(),
     db
@@ -121,7 +124,12 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
   if (spinRes.error) fail("getUserState/spin", spinRes.error);
   if (gameRes.error) fail("getUserState/game", gameRes.error);
 
-  const profile = profileRes.data as { handle: string; display_name: string | null } | null;
+  const profile = profileRes.data as {
+    handle: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    x_created_at: string | null;
+  } | null;
   const entry = entryRes.data as
     | { evm_address: string; gtd: boolean }
     | null;
@@ -147,6 +155,8 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
           handle: profile.handle,
           displayName: profile.display_name ?? profile.handle,
           seed: profile.handle,
+          avatarUrl: profile.avatar_url,
+          joinedAt: profile.x_created_at,
         }
       : null,
     tasks: {

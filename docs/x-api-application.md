@@ -13,8 +13,8 @@ them on our own allowlist.
 In detail:
 
 1. Sign in with X using OAuth 2.0 with PKCE, requesting read-only scopes
-   (users.read, tweet.read, offline.access). We are a confidential client and
-   the token is held server side only.
+   (users.read, tweet.read). We are a confidential client and the token is
+   held server side only, exchanged once and then discarded.
 
 2. After sign-in we call GET /2/users/me once to read that account's numeric id,
    username, display name, profile image URL, description, public follower and

@@ -84,19 +84,9 @@ export const buildShareIntent = mock.buildShareIntent;
 
 /* ── session ────────────────────────────────────────────────────────────── */
 
-// INTEGRATION: X OAuth
-export async function connectX(): Promise<{
-  account: XAccount;
-  progress: UserProgress | null;
-}> {
-  const res = await call<XAccount>("/api/session", { method: "POST" });
-  if (!res) return { account: await mock.connectX(), progress: null };
-
-  const me = await call<{ connected: boolean; progress: UserProgress | null }>(
-    "/api/me",
-  );
-  return { account: res, progress: me?.progress ?? null };
-}
+/** Where the Connect X button points. A full navigation, not a fetch: the
+ *  user has to land on x.com to approve, so this cannot be XHR. */
+export const X_LOGIN_PATH = "/api/auth/x/start";
 
 export async function disconnectX(): Promise<void> {
   await call("/api/session", { method: "DELETE" }).catch(() => null);

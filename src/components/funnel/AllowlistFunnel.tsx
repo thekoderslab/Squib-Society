@@ -1,10 +1,10 @@
 "use client";
 
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   ApiError,
-  connectX,
+  X_LOGIN_PATH,
   disconnectX,
   getMyTasks,
   submitAllowlist,
@@ -13,7 +13,7 @@ import {
 import { EVM_ADDRESS_RE, HONEYPOT_FIELD, POINTS } from "@/lib/constants";
 import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
-import Button, { Spinner } from "../ui/Button";
+import Button, { LinkButton, Spinner } from "../ui/Button";
 import Chip, { Check } from "../ui/Chip";
 import { ExternalIcon, TaskIcon, XLogo } from "./icons";
 import SuccessModal from "./SuccessModal";
@@ -33,7 +33,6 @@ export default function AllowlistFunnel() {
     baseTasksDone,
   } = useProgress();
 
-  const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
@@ -50,37 +49,39 @@ export default function AllowlistFunnel() {
   const connected = !!progress.x;
   const alreadyIn = hydrated && progress.allowlisted;
 
-  async function handleConnect() {
-    setConnecting(true);
-    setConnectError(null);
-    try {
-      // INTEGRATION: X OAuth
-      const { account, progress: server } = await connectX();
-      setX(account);
-      // In Supabase mode the server already knows everything this account did
-      // before, so adopt that rather than the browser's copy.
-      if (server) applyServerProgress(server);
-    } catch (err) {
-      // Without this the promise just rejects into nothing, the spinner stops,
-      // and the button looks like it did not register the click at all.
-      const code = err instanceof ApiError ? err.code : "";
-      setConnectError(
-        code === "missing_session_secret"
-          ? "Setup: SESSION_SECRET is not set on this deployment. Add it and redeploy."
-          : code === "rate_limited"
-          ? "Too many attempts from your network. Give it an hour and try again."
-          : code === "schema_missing"
-            ? `Setup: the database is missing ${
-                (err instanceof ApiError && err.missing) || "an object"
-              }. Re-run supabase/schema.sql.`
-            : code === "bad_service_key"
-              ? "Setup: SUPABASE_SERVICE_ROLE_KEY is wrong or expired."
-              : "Could not reach X just then. Try again in a moment.",
-      );
-    } finally {
-      setConnecting(false);
-    }
-  }
+  /**
+   * X redirects back with ?x_error=... when something went wrong. Read it once,
+   * then strip it from the URL so a refresh does not resurrect a stale error.
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("x_error");
+    if (!code) return;
+
+    setConnectError(
+      {
+        cancelled: "You cancelled on X. Nothing was saved, try again when ready.",
+        denied: "X declined that sign in. Try again.",
+        rate_limited:
+          "Too many attempts from your network. Give it an hour and try again.",
+        bad_state: "That sign in link expired. Start again from this page.",
+        expired: "That sign in took too long. Start again from this page.",
+        missing_code: "X did not send anything back. Try again.",
+        not_configured: "Setup: this deployment is not connected to a database.",
+        exchange_failed: "Could not finish signing in with X. Try again.",
+        start_failed: "Could not reach X just then. Try again in a moment.",
+      }[code] ?? "Could not sign in with X. Try again.",
+    );
+
+    params.delete("x_error");
+    params.delete("connected");
+    const rest = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      window.location.pathname + (rest ? `?${rest}` : ""),
+    );
+  }, []);
 
   async function handleDisconnect() {
     setX(null);
@@ -145,15 +146,10 @@ export default function AllowlistFunnel() {
   if (!connected) {
     return (
       <div className="mx-auto max-w-sm">
-        <Button
-          onClick={handleConnect}
-          loading={connecting}
-          size="lg"
-          className="w-full"
-        >
-          {!connecting ? <XLogo className="h-4 w-4" /> : null}
-          {connecting ? "Opening X" : "Connect X"}
-        </Button>
+        <LinkButton href={X_LOGIN_PATH} size="lg" className="w-full">
+          <XLogo className="h-4 w-4" />
+          Connect X
+        </LinkButton>
         {connectError ? (
           <p
             role="alert"

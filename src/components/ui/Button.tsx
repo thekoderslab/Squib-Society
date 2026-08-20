@@ -76,7 +76,9 @@ export function LinkButton({
   const classes = buttonClasses(variant, size, className);
 
   // Internal routes go through next/link so navigation stays client-side.
-  if (href.startsWith("/")) {
+  // /api/* is excluded: those handlers redirect off-site, and next/link would
+  // try to client-route them and fetch an RSC payload that never arrives.
+  if (href.startsWith("/") && !href.startsWith("/api/")) {
     return (
       <Link href={href} className={classes} {...rest}>
         {children}
