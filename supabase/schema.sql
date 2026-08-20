@@ -108,7 +108,13 @@ alter table public.streaks add column if not exists last_spin_at timestamptz;
 
 -- ── leaderboard ─────────────────────────────────────────────────────────────
 -- A view, not a table. The ledger is the truth, this is only how we read it.
-create or replace view public.leaderboard as
+--
+-- Dropped first, not "create or replace". Replace can only APPEND columns to an
+-- existing view: inserting one in the middle reads as renaming whichever column
+-- already held that position. Dropping costs nothing here because a view holds
+-- no data.
+drop view if exists public.leaderboard;
+create view public.leaderboard as
   select
     p.id                                as profile_id,
     p.handle,

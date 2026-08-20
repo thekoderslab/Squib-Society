@@ -81,7 +81,7 @@ export const SQUIBS: Squib[] = [
     slug: "tma-squib",
     name: "TMA Squib",
     role: "Incognito",
-    photo: "/squibs/0368-paper-planet-squib.png",
+    photo: "/squibs/0368-tma-squib.png",
     scene: "Toy room",
     bio: "The face is under there somewhere. The bear is called Gerald and Gerald has seen things.",
   },
