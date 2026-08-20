@@ -63,10 +63,15 @@ export default function AllowlistFunnel() {
     } catch (err) {
       // Without this the promise just rejects into nothing, the spinner stops,
       // and the button looks like it did not register the click at all.
+      const code = err instanceof ApiError ? err.code : "";
       setConnectError(
-        err instanceof ApiError && err.code === "rate_limited"
+        code === "rate_limited"
           ? "Too many attempts from your network. Give it an hour and try again."
-          : "Could not reach X just then. Try again in a moment.",
+          : code === "schema_missing"
+            ? "Setup: the database tables are missing. Run supabase/schema.sql."
+            : code === "bad_service_key"
+              ? "Setup: SUPABASE_SERVICE_ROLE_KEY is wrong or expired."
+              : "Could not reach X just then. Try again in a moment.",
       );
     } finally {
       setConnecting(false);

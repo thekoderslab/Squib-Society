@@ -17,10 +17,31 @@ export function badRequest(error: string) {
   return NextResponse.json({ error }, { status: 400 });
 }
 
+/**
+ * Turns the two configuration failures that actually happen into a code the
+ * client can name, instead of a generic 500 that leaves you reading logs.
+ * Neither code leaks data: they only say the setup is wrong, which is exactly
+ * what the operator needs to hear.
+ */
+function classify(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("does not exist") || m.includes("could not find the function")) {
+    return "schema_missing";
+  }
+  if (
+    m.includes("invalid api key") ||
+    m.includes("jwt") ||
+    m.includes("invalid authentication")
+  ) {
+    return "bad_service_key";
+  }
+  return "server_error";
+}
+
 export function serverError(e: unknown) {
   const message = e instanceof Error ? e.message : "unknown error";
   console.error("[squib-api]", message);
-  return NextResponse.json({ error: "server_error" }, { status: 500 });
+  return NextResponse.json({ error: classify(message) }, { status: 500 });
 }
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
