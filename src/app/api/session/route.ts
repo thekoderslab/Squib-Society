@@ -27,9 +27,12 @@ const MOCK_ACCOUNTS = [
 export async function POST(request: Request) {
   if (!supabaseConfigured) return notConfigured();
 
-  // Connecting is what mints a profile row, so this is the route a bot would
-  // hammer first. Tight cap per address.
-  const limited = await limitByIp(request, "session", { limit: 8, windowSeconds: 3600 });
+  // Connecting mints a profile row, so a bot would hammer this first. But the
+  // cap cannot be tight: mobile carriers put thousands of real users behind one
+  // CGNAT address, and a whole campus or office shares one too. Once real OAuth
+  // lands, holding an actual X account is the real gate and this is only here
+  // to stop a runaway script.
+  const limited = await limitByIp(request, "session", { limit: 30, windowSeconds: 3600 });
   if (limited) return limited;
 
   try {

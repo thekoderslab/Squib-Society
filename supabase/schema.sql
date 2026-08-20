@@ -37,7 +37,14 @@ create table if not exists public.profiles (
 
 create unique index if not exists profiles_x_user_id_key
   on public.profiles (x_user_id);
-create unique index if not exists profiles_handle_lower_key
+
+-- Handle is NOT unique, on purpose. X handles get renamed and recycled: if
+-- someone renames to a handle another profile used to hold, a unique index here
+-- would reject their next sign-in for no good reason. x_user_id above is the
+-- real identity and the only thing dedupe should rest on. This index exists for
+-- lookups and for spotting clusters, nothing more.
+drop index if exists public.profiles_handle_lower_key;
+create index if not exists profiles_handle_lower_idx
   on public.profiles (lower(handle));
 
 -- ── allowlist entries ───────────────────────────────────────────────────────

@@ -34,6 +34,7 @@ export default function AllowlistFunnel() {
   } = useProgress();
 
   const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState(false);
@@ -51,6 +52,7 @@ export default function AllowlistFunnel() {
 
   async function handleConnect() {
     setConnecting(true);
+    setConnectError(null);
     try {
       // INTEGRATION: X OAuth
       const { account, progress: server } = await connectX();
@@ -58,6 +60,14 @@ export default function AllowlistFunnel() {
       // In Supabase mode the server already knows everything this account did
       // before, so adopt that rather than the browser's copy.
       if (server) applyServerProgress(server);
+    } catch (err) {
+      // Without this the promise just rejects into nothing, the spinner stops,
+      // and the button looks like it did not register the click at all.
+      setConnectError(
+        err instanceof ApiError && err.code === "rate_limited"
+          ? "Too many attempts from your network. Give it an hour and try again."
+          : "Could not reach X just then. Try again in a moment.",
+      );
     } finally {
       setConnecting(false);
     }
@@ -135,6 +145,14 @@ export default function AllowlistFunnel() {
           {!connecting ? <XLogo className="h-4 w-4" /> : null}
           {connecting ? "Opening X" : "Connect X"}
         </Button>
+        {connectError ? (
+          <p
+            role="alert"
+            className="mt-3 border-2 border-flare bg-flare/10 px-3 py-2 text-center text-sm text-flare"
+          >
+            {connectError}
+          </p>
+        ) : null}
         <p className="mt-3 text-center text-xs leading-relaxed text-ink/45">
           Read only. We never post as you, and there is no wallet involved.
         </p>
