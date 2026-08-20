@@ -1,23 +1,14 @@
 /**
- * THE SEAM.
+ * Static content: the squib roster and the task list.
  *
- * Every piece of dynamic data on this site is read through a typed function in
- * this file. Each one returns mock data from memory, and each external
- * dependency is marked with an `// INTEGRATION:` comment.
+ * Everything dynamic now comes from Supabase through src/lib/api.ts. This file
+ * used to hold mock implementations as a fallback; they are gone. A live site
+ * quietly serving invented leaderboard rows or a fake allowlist rank is worse
+ * than an honest error, because nobody notices it is lying.
  */
 
-import { DAILY_SPIN, PINNED_POST_URL, POINTS, SITE_URL, X_HANDLE } from "./constants";
-import type {
-  LeaderboardEntry,
-  SpinResult,
-  Squib,
-  SubmitResult,
-  Task,
-  XAccount,
-} from "./types";
-
-/** Fake network latency so loading states are real and visible in dev. */
-const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+import { PINNED_POST_URL, POINTS, SITE_URL, X_HANDLE } from "./constants";
+import type { Squib, Task } from "./types";
 
 /* ───────────────────────────── The squibs ─────────────────────────────── */
 
@@ -153,98 +144,6 @@ export function getMyTasks(): Task[] {
   return TASKS;
 }
 
-/**
- * Mock handles for the fake X connect. The extra fields mirror exactly what
- * /2/users/me returns on the free read-only scopes, so the profile card is
- * built against the real shape.
- */
-const MOCK_HANDLES: XAccount[] = [
-  {
-    handle: "tentaclepilled",
-    displayName: "tentacle pilled",
-    seed: "tp",
-    bio: "collecting small green things. mostly harmless.",
-    followers: 4821,
-    following: 312,
-    joinedAt: "2019-04-11",
-  },
-  {
-    handle: "vinylgoblin",
-    displayName: "vinyl goblin",
-    seed: "vg",
-    bio: "shelf full, wallet empty",
-    followers: 1290,
-    following: 806,
-    joinedAt: "2021-08-02",
-  },
-  {
-    handle: "shelfappeal",
-    displayName: "shelf appeal",
-    seed: "sa",
-    bio: "if it has a face i will buy it",
-    followers: 17400,
-    following: 240,
-    joinedAt: "2017-01-23",
-    verified: true,
-  },
-  {
-    handle: "softcosmic",
-    displayName: "soft cosmic",
-    seed: "sc",
-    bio: null,
-    followers: 233,
-    following: 199,
-    joinedAt: "2023-11-30",
-  },
-];
-
-// INTEGRATION: X OAuth
-export async function connectX(): Promise<XAccount> {
-  await wait(900);
-  return MOCK_HANDLES[Math.floor(Math.random() * MOCK_HANDLES.length)];
-}
-
-// INTEGRATION: task verification.
-// Offload to a quest platform (Zealy / Galxe / TaskOn) rather than hand-rolling
-// X API checks. Follow, like and repost verification is rate limited and
-// expensive at volume, and quote-tweet detection is the least reliable of the
-// four. That is exactly why `quote` is a bonus here and not a hard gate.
-export async function verifyTask(id: string): Promise<{ verified: boolean }> {
-  await wait(1200);
-  void id;
-  return { verified: true };
-}
-
-// INTEGRATION: sybil filtering + points ledger.
-export async function submitAllowlist(input: {
-  handle: string;
-  evmAddress: string;
-  captchaToken: string;
-}): Promise<SubmitResult> {
-  await wait(1400);
-  void input;
-  return { ok: true, rank: 148, points: 115, allowlisted: true };
-}
-
-// INTEGRATION: daily spin (server-authoritative).
-export async function requestSpin(): Promise<SpinResult> {
-  await wait(600);
-  const total = DAILY_SPIN.segments.reduce((sum, s) => sum + s.weight, 0);
-  let roll = Math.random() * total;
-  let i = 0;
-  for (; i < DAILY_SPIN.segments.length; i++) {
-    roll -= DAILY_SPIN.segments[i].weight;
-    if (roll <= 0) break;
-  }
-  const seg = DAILY_SPIN.segments[Math.min(i, DAILY_SPIN.segments.length - 1)];
-  return {
-    segment: Math.min(i, DAILY_SPIN.segments.length - 1),
-    points: seg.points,
-    gtd: seg.kind === "gtd",
-    again: seg.kind === "again",
-  };
-}
-
 // INTEGRATION: share intent (pre-filled quote tweet).
 export function buildShareIntent(rank: number | null): string {
   const line = rank
@@ -253,62 +152,4 @@ export function buildShareIntent(rank: number | null): string {
   const text = `${line} 369 squibs, and every one of them is up to something. Come get yours.`;
   const params = new URLSearchParams({ text, url: SITE_URL });
   return `https://x.com/intent/post?${params.toString()}`;
-}
-
-/* ───────────────────────────── Leaderboard ────────────────────────────── */
-
-const MOCK_BOARD: Omit<LeaderboardEntry, "rank">[] = [
-  { handle: "kelpwitch", displayName: "kelp witch", points: 1482, streak: 31 },
-  { handle: "mossmarket", displayName: "moss market", points: 1439, streak: 30 },
-  { handle: "tinyoldgod", displayName: "small hours", points: 1310, streak: 28 },
-  { handle: "greenroomonly", displayName: "green room", points: 1287, streak: 29 },
-  { handle: "sofglazed", displayName: "soft glaze", points: 1204, streak: 24 },
-  { handle: "brinepilled", displayName: "brine", points: 1166, streak: 26 },
-  { handle: "vinylgoblin", displayName: "vinyl goblin", points: 1098, streak: 21 },
-  { handle: "shelfappeal", displayName: "shelf appeal", points: 1043, streak: 22 },
-  { handle: "quietstudio", displayName: "quiet studio", points: 997, streak: 19 },
-  { handle: "nofilterclay", displayName: "clay", points: 964, streak: 20 },
-  { handle: "boxerbeacon", displayName: "beacon", points: 903, streak: 17 },
-  { handle: "sundaysets", displayName: "sunday sets", points: 871, streak: 18 },
-  { handle: "tentaclepilled", displayName: "tentacle pilled", points: 842, streak: 15 },
-  { handle: "matteonly", displayName: "matte only", points: 810, streak: 16 },
-  { handle: "deepshelf", displayName: "deep shelf", points: 778, streak: 14 },
-  { handle: "softcosmic", displayName: "soft cosmic", points: 741, streak: 13 },
-  { handle: "thirdbase", displayName: "third base", points: 706, streak: 12 },
-  { handle: "lowtidehours", displayName: "low tide", points: 682, streak: 11 },
-  { handle: "gouacheghost", displayName: "gouache", points: 655, streak: 12 },
-  { handle: "smallgodsclub", displayName: "the regulars", points: 631, streak: 10 },
-  { handle: "paperlantern", displayName: "paper lantern", points: 604, streak: 9 },
-  { handle: "cozyabyss", displayName: "cosy", points: 588, streak: 9 },
-  { handle: "warmgreyco", displayName: "warm grey", points: 561, streak: 8 },
-  { handle: "hobbyhorror", displayName: "hobby hours", points: 534, streak: 7 },
-  { handle: "toyshelfsaint", displayName: "top shelf", points: 512, streak: 7 },
-];
-
-export async function getLeaderboard(you?: {
-  handle: string;
-  displayName: string;
-  points: number;
-  streak: number;
-}): Promise<{ entries: LeaderboardEntry[]; you: LeaderboardEntry | null }> {
-  await wait(220);
-
-  const rows = MOCK_BOARD.filter((r) => !you || r.handle !== you.handle).map((r) => ({
-    ...r,
-    isYou: false,
-  }));
-  if (you) rows.push({ ...you, isYou: true });
-
-  rows.sort((a, b) => b.points - a.points || a.handle.localeCompare(b.handle));
-
-  const entries = rows.map((r, i) => ({ ...r, rank: i + 1 }));
-  return { entries, you: entries.find((e) => e.isYou) ?? null };
-}
-
-/* ───────────────────────────── Mini game ─────────────────────────────── */
-
-// INTEGRATION: points ledger
-export async function submitGameScore(): Promise<{ ok: true }> {
-  await wait(400);
-  return { ok: true };
 }

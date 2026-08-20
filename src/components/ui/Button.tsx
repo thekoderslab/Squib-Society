@@ -1,4 +1,6 @@
 import Link from "next/link";
+
+import SquibHead from "../art/SquibHead";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react";
 
 type Variant = "primary" | "ghost" | "quiet";
@@ -93,12 +95,12 @@ export function LinkButton({
   );
 }
 
-/** Square spinner — a rotating block, not a soft ring. */
-export function Spinner({ className = "" }: { className?: string }) {
+/** A squib head, spinning. The loader everywhere on the site. */
+export function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
-    <span
-      className={`h-3.5 w-3.5 shrink-0 animate-spin border-2 border-current border-t-transparent ${className}`}
-      aria-hidden
+    <SquibHead
+      size={64}
+      className={`shrink-0 animate-spin object-contain ${className}`}
     />
   );
 }

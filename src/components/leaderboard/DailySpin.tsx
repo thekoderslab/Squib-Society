@@ -31,6 +31,7 @@ export default function DailySpin() {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   const connected = !!progress.x;
@@ -47,6 +48,7 @@ export default function DailySpin() {
     if (spinning || locked || !connected) return;
     setSpinning(true);
     setOutcome(null);
+    setFailed(false);
 
     try {
       const res = await requestSpin();
@@ -65,6 +67,8 @@ export default function DailySpin() {
         reduce ? 150 : 3600,
       );
     } catch {
+      // Silent failure here just stops the wheel with no explanation.
+      setFailed(true);
       setSpinning(false);
     }
   }
@@ -169,6 +173,10 @@ export default function DailySpin() {
           <p className="inline-flex items-center gap-2 text-sm text-ink/60">
             <XLogo className="h-3 w-3 shrink-0" />
             Connect X on the allowlist page and your spin unlocks here.
+          </p>
+        ) : failed ? (
+          <p role="alert" className="text-sm text-flare">
+            That spin did not go through. Try again in a moment.
           </p>
         ) : outcome ? (
           <p role="status" className="text-sm leading-relaxed">

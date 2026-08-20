@@ -3,25 +3,22 @@
 /**
  * THE SEAM, client side.
  *
- * Components import from here and never from mock-api directly. Each call hits
- * the matching route handler. If the server answers 503 `{configured:false}`
- * (no Supabase env vars) or the network is gone, it quietly falls back to the
- * in-memory mock. The decision is cached after the first call.
+ * Components import from here. Each call hits the matching route handler.
  *
- * That means the site works with zero configuration, and the moment
- * SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY exist it is running on real data,
- * with no code change and no feature flag to remember.
+ * There are no mock fallbacks any more. Now that the site runs on real data, a
+ * backend that cannot be reached must surface as an error or an empty state,
+ * never as invented rows or a fabricated allowlist rank. Silent fiction on a
+ * live site is worse than a visible failure.
  */
 
 import { HONEYPOT_FIELD } from "./constants";
-import * as mock from "./mock-api";
+import { buildShareIntent as buildShare, getMyTasks as tasks } from "./mock-api";
 import type {
   LeaderboardEntry,
   SpinResult,
   Task,
   TaskId,
   UserProgress,
-  XAccount,
 } from "./types";
 
 export type Backend = "unknown" | "supabase" | "mock";
@@ -79,8 +76,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T | null> {
 
 /* ── static content, no backend involved ────────────────────────────────── */
 
-export const getMyTasks = (): Task[] => mock.getMyTasks();
-export const buildShareIntent = mock.buildShareIntent;
+export const getMyTasks = (): Task[] => tasks();
+export const buildShareIntent = buildShare;
 
 /* ── session ────────────────────────────────────────────────────────────── */
 
@@ -114,7 +111,7 @@ export async function verifyTask(taskId: TaskId): Promise<{
     method: "POST",
     body: JSON.stringify({ taskId }),
   });
-  if (!res) return { verified: (await mock.verifyTask(taskId)).verified, progress: null };
+  if (!res) throw new ApiError(503, "offline");
   return { verified: res.verified, progress: res.progress };
 }
 
@@ -137,10 +134,7 @@ export async function submitAllowlist(input: {
     },
   );
 
-  if (!res) {
-    const m = await mock.submitAllowlist(input);
-    return { rank: m.rank, points: m.points, progress: null };
-  }
+  if (!res) throw new ApiError(503, "offline");
   return { rank: res.rank, points: res.points, progress: res.progress };
 }
 
@@ -158,7 +152,7 @@ export async function requestSpin(): Promise<
     progress: UserProgress;
   }>("/api/spin", { method: "POST" });
 
-  if (!res) return { ...(await mock.requestSpin()), progress: null };
+  if (!res) throw new ApiError(503, "offline");
   return {
     segment: res.segment,
     points: res.points,
@@ -190,17 +184,19 @@ export async function earn(
 
 /* ── reads ──────────────────────────────────────────────────────────────── */
 
-export async function getLeaderboard(you?: {
-  handle: string;
-  displayName: string;
-  points: number;
-  streak: number;
-}): Promise<{ entries: LeaderboardEntry[]; you: LeaderboardEntry | null }> {
+/**
+ * The board. The server already knows who you are from the session cookie, so
+ * there is nothing to pass in. An unreachable backend returns an empty board
+ * rather than invented rows.
+ */
+export async function getLeaderboard(): Promise<{
+  entries: LeaderboardEntry[];
+  you: LeaderboardEntry | null;
+}> {
   const res = await call<{
     entries: LeaderboardEntry[];
     you: LeaderboardEntry | null;
   }>("/api/leaderboard");
 
-  if (!res) return mock.getLeaderboard(you);
-  return res;
+  return res ?? { entries: [], you: null };
 }
