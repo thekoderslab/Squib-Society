@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { formatNumber } from "@/lib/dates";
 import SquibHead from "../art/SquibHead";
-import Button from "../ui/Button";
 
 type Row = { day: string; n: number };
 type Entry = { handle: string; address: string; gtd: boolean; at: string };
@@ -32,17 +32,18 @@ const TASK_LABEL: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [state, setState] = useState<"loading" | "ok" | "denied" | "failed">(
-    "loading",
-  );
+  const [state, setState] = useState<"loading" | "ok" | "failed">("loading");
 
   const load = useCallback(async () => {
     setState("loading");
     try {
       const res = await fetch("/api/admin/stats", { cache: "no-store" });
+      // The eight hour cookie expired while the page was open. Ask the server
+      // again and it will render the lock screen.
       if (res.status === 404) {
-        setState("denied");
+        router.refresh();
         return;
       }
       if (!res.ok) throw new Error(String(res.status));
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
     } catch {
       setState("failed");
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     void load();
@@ -65,10 +66,6 @@ export default function AdminDashboard() {
         <p className="stamp text-ink/40">Counting</p>
       </div>
     );
-  }
-
-  if (state === "denied") {
-    return <PasswordGate onUnlocked={() => void load()} />;
   }
 
   if (state === "failed" || !stats) {
@@ -220,8 +217,7 @@ export default function AdminDashboard() {
           type="button"
           onClick={async () => {
             await fetch("/api/admin/login", { method: "DELETE" });
-            setStats(null);
-            setState("denied");
+            router.refresh();
           }}
           className="shrink-0 border-2 border-hairline bg-cream px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-wide shadow-card transition hover:bg-ink hover:text-cream"
         >
@@ -306,80 +302,5 @@ function Chart({ title, rows }: { title: string; rows: Row[] }) {
         </div>
       )}
     </section>
-  );
-}
-
-/**
- * The gate. Rendered whenever the stats endpoint says no, which covers both a
- * missing cookie and an expired one, so a stale session simply asks again.
- */
-function PasswordGate({ onUnlocked }: { onUnlocked: () => void }) {
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-
-      if (res.ok) {
-        setPassword("");
-        onUnlocked();
-        return;
-      }
-      setError(
-        res.status === 429
-          ? "Too many attempts. Wait fifteen minutes."
-          : res.status === 503
-            ? "ADMIN_PASSWORD is not set on this deployment."
-            : "That is not the password.",
-      );
-    } catch {
-      setError("Could not reach the server. Try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <form
-      onSubmit={submit}
-      className="mx-auto max-w-sm border-2 border-hairline bg-surface p-6 shadow-lift"
-    >
-      <p className="stamp text-squib-deep">Locked</p>
-      <p className="mt-3 text-sm leading-relaxed text-ink/60">
-        This page lists entrants and their wallet addresses. Password required.
-      </p>
-
-      <label htmlFor="admin-password" className="sr-only">
-        Admin password
-      </label>
-      <input
-        id="admin-password"
-        type="password"
-        autoComplete="current-password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="mt-4 w-full border-2 border-hairline bg-cream px-4 py-3 font-mono text-sm outline-none focus:border-squib-deep"
-        placeholder="Password"
-      />
-
-      {error ? (
-        <p role="alert" className="mt-3 text-sm text-flare">
-          {error}
-        </p>
-      ) : null}
-
-      <Button type="submit" loading={busy} size="lg" className="mt-4 w-full">
-        {busy ? "Checking" : "Unlock"}
-      </Button>
-    </form>
   );
 }
