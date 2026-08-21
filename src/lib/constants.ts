@@ -10,11 +10,31 @@ export const CHAIN_SUBTITLE = "EVM · Arbitrum L2";
 export const MINT_VENUE = "OpenSea"; // minting happens off-site — no mint UI here
 export const WL_WINNERS = 20; // top N from the leaderboard at snapshot
 
-export const SITE_URL = "https://squibsociety.xyz"; // placeholder
+export const SITE_URL = "https://squibsociety.xyz";
 export const X_HANDLE = "@SquibSociety";
 export const X_URL = "https://x.com/SquibSociety";
 export const OPENSEA_URL = "https://opensea.io/collection/squib-society"; // placeholder
-export const PINNED_POST_URL = "https://x.com/squibsociety/status/1"; // placeholder
+/** The post the like, repost and quote tasks point at. */
+export const PINNED_POST_ID = "2090843215754928485";
+export const PINNED_POST_URL = `https://x.com/${X_HANDLE.slice(1)}/status/${PINNED_POST_ID}`;
+
+/**
+ * X action intents. These open the actual like or repost dialog rather than
+ * dropping someone on the post to find the button themselves, which is the
+ * difference between a task people finish and one they abandon.
+ */
+export const X_INTENT = {
+  follow: `https://x.com/intent/follow?screen_name=${X_HANDLE.slice(1)}`,
+  like: `https://x.com/intent/like?tweet_id=${PINNED_POST_ID}`,
+  repost: `https://x.com/intent/retweet?tweet_id=${PINNED_POST_ID}`,
+  /** No dedicated quote intent exists. Attaching the post URL makes it one. */
+  quote:
+    `https://x.com/intent/post?` +
+    new URLSearchParams({
+      url: `https://x.com/${X_HANDLE.slice(1)}/status/${PINNED_POST_ID}`,
+      text: "369 squibs, and every one of them is up to something.",
+    }).toString(),
+};
 
 /** Snapshot deadline for the leaderboard top-20. ISO, UTC. */
 export const SNAPSHOT_ISO = "2026-09-15T18:00:00.000Z";

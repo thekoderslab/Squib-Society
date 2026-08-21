@@ -7,7 +7,7 @@
  * than an honest error, because nobody notices it is lying.
  */
 
-import { PINNED_POST_URL, POINTS, SITE_URL, X_HANDLE } from "./constants";
+import { POINTS, SITE_URL, X_HANDLE, X_INTENT } from "./constants";
 import type { Squib, Task } from "./types";
 
 /* ───────────────────────────── The squibs ─────────────────────────────── */
@@ -104,6 +104,9 @@ export function getSquibBySlug(slug: string): Squib | undefined {
 /**
  * Order matters. The funnel unlocks these one at a time, so the array order is
  * the order the user walks them.
+ *
+ * Each href is an X action intent, not the post itself, so Go lands on the
+ * like or repost dialog directly instead of leaving someone to find the button.
  */
 export const TASKS: Task[] = [
   {
@@ -112,7 +115,7 @@ export const TASKS: Task[] = [
     detail: "Required",
     bonus: false,
     points: POINTS.follow,
-    href: `https://x.com/${X_HANDLE.replace("@", "")}`,
+    href: X_INTENT.follow,
   },
   {
     id: "like",
@@ -120,7 +123,7 @@ export const TASKS: Task[] = [
     detail: "Required",
     bonus: false,
     points: POINTS.like,
-    href: PINNED_POST_URL,
+    href: X_INTENT.like,
   },
   {
     id: "retweet",
@@ -128,7 +131,7 @@ export const TASKS: Task[] = [
     detail: "Required",
     bonus: false,
     points: POINTS.retweet,
-    href: PINNED_POST_URL,
+    href: X_INTENT.repost,
   },
   {
     id: "quote",
@@ -136,7 +139,7 @@ export const TASKS: Task[] = [
     detail: "Bonus, not required",
     bonus: true,
     points: POINTS.quote,
-    href: PINNED_POST_URL,
+    href: X_INTENT.quote,
   },
 ];
 
