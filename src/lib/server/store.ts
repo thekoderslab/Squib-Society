@@ -78,7 +78,8 @@ export async function getProfile(id: string): Promise<ProfileRow | null> {
 export async function getUserState(profileId: string): Promise<UserProgress> {
   const db = admin();
 
-  const [profileRes, entryRes, streakRes, ledgerRes, spinRes, gameRes] = await Promise.all([
+  const [profileRes, entryRes, streakRes, ledgerRes, spinRes, gameRes, rankRes] =
+    await Promise.all([
     db
       .from("profiles")
       .select("handle, display_name, avatar_url, x_created_at")
@@ -115,6 +116,10 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // In the batch rather than after it: this is independent of everything
+    // above, and running it afterwards added two sequential round trips to
+    // every page load.
+    getRank(profileId),
   ]);
 
   if (profileRes.error) fail("getUserState/profile", profileRes.error);
@@ -145,6 +150,10 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
     ? (gameRes.data as { created_at: string }).created_at
     : null;
 
+  // Rank comes from the same view the board uses, so the number in the modal
+  // and the number in the table can never disagree.
+  const { rank } = rankRes;
+
   const gameBest = ledger
     .filter((r) => r.kind === "game")
     .reduce((best, r) => Math.max(best, Number(r.meta?.score ?? 0)), 0);
@@ -169,6 +178,7 @@ export async function getUserState(profileId: string): Promise<UserProgress> {
     allowlisted: !!entry,
     gtd: entry?.gtd ?? false,
     points: ledger.reduce((sum, r) => sum + r.points, 0),
+    rank,
     // Streak here is "spins taken", which is what the flame on the board means.
     streak: streak?.current_streak ?? 0,
     lastSpinAt: lastSpinAt ?? null,

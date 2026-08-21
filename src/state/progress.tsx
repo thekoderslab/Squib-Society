@@ -21,6 +21,7 @@ const EMPTY: UserProgress = {
   allowlisted: false,
   gtd: false,
   points: 0,
+  rank: null,
   streak: 0,
   lastSpinAt: null,
   lastGameAt: null,

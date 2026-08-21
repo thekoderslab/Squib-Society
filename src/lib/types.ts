@@ -79,6 +79,8 @@ export type UserProgress = {
   /** Won a guaranteed spot, either from the spin or from the snapshot. */
   gtd: boolean;
   points: number;
+  /** Position on the board. Null until the server has been asked. */
+  rank: number | null;
   streak: number;
   /** ISO timestamp of the last daily spin, or null. */
   lastSpinAt: string | null;

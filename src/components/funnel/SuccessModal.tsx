@@ -21,7 +21,9 @@ export default function SuccessModal({
   result: SubmitResult | null;
 }) {
   const { progress, applyServerProgress } = useProgress();
-  const rank = result?.rank ?? null;
+  // result only exists right after a submit. Reopening from "Open your
+  // spot" has none, which is why this used to render a placeholder.
+  const rank = result?.rank ?? progress.rank;
 
   // The share bonus lands when they open the intent. Checking that the post
   // actually happened is the least reliable of the four checks, which is why
@@ -53,7 +55,7 @@ export default function SuccessModal({
           <div className="bg-cream px-4 py-3">
             <dt className="stamp text-ink/50">Your place</dt>
             <dd className="mt-1.5 font-mono text-2xl font-bold tabular">
-              {rank ? `#${rank}` : "··"}
+              {rank ? `#${rank}` : "Counting"}
             </dd>
           </div>
           <div className="bg-cream px-4 py-3">
