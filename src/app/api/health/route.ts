@@ -67,6 +67,7 @@ export async function GET() {
     ["award_points", { p_profile: ghost, p_kind: "health", p_points: 0 }],
     ["daily_spin", { p_profile: ghost, p_points: 0, p_cooldown_hours: 24 }],
     ["cooldown_award", { p_profile: ghost, p_kind: "health", p_points: 0, p_cooldown_hours: 24 }],
+    ["admin_stats", { p_days: 1 }],
   ];
 
   const functions: Record<string, string | true> = {};

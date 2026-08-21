@@ -404,3 +404,84 @@ revoke all on function public.rate_limit(text, integer, integer)
   from public, anon, authenticated;
 revoke all on function public.prune_rate_limits()
   from public, anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Admin analytics
+--
+-- One function, one round trip, all the counting done where the rows are.
+-- Doing this as a dozen separate count queries from the app would be a dozen
+-- network hops for numbers Postgres can produce in a single pass.
+--
+-- Reachable only through /api/admin/stats, which checks the caller's X user id
+-- against ADMIN_X_IDS before it calls this.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.admin_stats(p_days integer default 14)
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'profiles',       (select count(*) from public.profiles),
+    'entries',        (select count(*) from public.allowlist_entries),
+    'gtd',            (select count(*) from public.allowlist_entries where gtd),
+    'points_total',   (select coalesce(sum(points), 0) from public.points_ledger),
+
+    -- How many people cleared each task. The gap between these is the funnel.
+    'tasks', coalesce((
+      select jsonb_object_agg(kind, n)
+      from (
+        select kind, count(*) as n
+        from public.points_ledger
+        where kind like 'task:%'
+        group by kind
+      ) t
+    ), '{}'::jsonb),
+
+    'spins',  (select count(*) from public.points_ledger where kind = 'spin'),
+    'games',  (select count(*) from public.points_ledger where kind = 'game'),
+    'shares', (select count(*) from public.points_ledger where kind = 'share'),
+
+    -- Distinct people who came back, not raw event counts.
+    'spinners', (select count(distinct profile_id) from public.points_ledger
+                 where kind = 'spin'),
+
+    'signups_by_day', coalesce((
+      select jsonb_agg(jsonb_build_object('day', d, 'n', n) order by d)
+      from (
+        select created_at::date as d, count(*) as n
+        from public.profiles
+        where created_at >= (now() - make_interval(days => p_days))::date
+        group by 1
+      ) s
+    ), '[]'::jsonb),
+
+    'entries_by_day', coalesce((
+      select jsonb_agg(jsonb_build_object('day', d, 'n', n) order by d)
+      from (
+        select created_at::date as d, count(*) as n
+        from public.allowlist_entries
+        where created_at >= (now() - make_interval(days => p_days))::date
+        group by 1
+      ) e
+    ), '[]'::jsonb),
+
+    -- Most recent entries, for spot checks and for the CSV export.
+    'recent', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'handle',  p.handle,
+        'address', a.evm_address,
+        'gtd',     a.gtd,
+        'at',      a.created_at
+      ) order by a.created_at desc)
+      from (
+        select * from public.allowlist_entries
+        order by created_at desc
+        limit 200
+      ) a
+      join public.profiles p on p.id = a.profile_id
+    ), '[]'::jsonb)
+  );
+$$;
+
+revoke all on function public.admin_stats(integer) from public, anon, authenticated;
