@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import {
   ApiError,
   X_LOGIN_PATH,
   disconnectX,
+  fetchMe,
   getMyTasks,
   submitAllowlist,
   verifyTask,
@@ -13,7 +21,7 @@ import {
 import { EVM_ADDRESS_RE, HONEYPOT_FIELD, POINTS, TASK_FLOW } from "@/lib/constants";
 import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
-import Button, { LinkButton, Spinner } from "../ui/Button";
+import Button, { Spinner } from "../ui/Button";
 import Chip, { Check } from "../ui/Chip";
 import { ExternalIcon, TaskIcon, XLogo } from "./icons";
 import SuccessModal from "./SuccessModal";
@@ -34,6 +42,7 @@ export default function AllowlistFunnel() {
   } = useProgress();
 
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [waiting, setWaiting] = useState(false);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState(false);
@@ -45,9 +54,62 @@ export default function AllowlistFunnel() {
   const addressId = useId();
   const errorId = `${addressId}-error`;
   const honeypotId = `${addressId}-hp`;
+  const poll = useRef<number | null>(null);
 
   const connected = !!progress.x;
   const alreadyIn = hydrated && progress.allowlisted;
+
+  useEffect(() => {
+    return () => {
+      if (poll.current) window.clearInterval(poll.current);
+    };
+  }, []);
+
+  /**
+   * Sign in happens in a second tab, so this one has to notice when it lands.
+   *
+   * The session is a cookie on the same origin, which every tab shares, so
+   * asking /api/me on a timer is enough. Without it the original tab would sit
+   * on "Connect X" forever while the other tab is signed in, which is the usual
+   * reason new-tab OAuth feels broken.
+   */
+  function handleConnect() {
+    setConnectError(null);
+
+    const tab = window.open(X_LOGIN_PATH, "_blank", "noopener,noreferrer");
+    if (!tab) {
+      // Popup blocked. Same tab is better than nothing happening at all.
+      window.location.href = X_LOGIN_PATH;
+      return;
+    }
+
+    setWaiting(true);
+    const started = Date.now();
+
+    if (poll.current) window.clearInterval(poll.current);
+    poll.current = window.setInterval(async () => {
+      // Give up after three minutes rather than polling forever.
+      if (Date.now() - started > 3 * 60 * 1000) {
+        stopWaiting();
+        return;
+      }
+      try {
+        const { progress: server } = await fetchMe();
+        if (server?.x) {
+          stopWaiting();
+          applyServerProgress(server);
+        }
+      } catch {
+        /* keep waiting, the other tab may still be mid flow */
+      }
+    }, 2000);
+  }
+
+  function stopWaiting() {
+    if (poll.current) window.clearInterval(poll.current);
+    poll.current = null;
+    setWaiting(false);
+  }
 
   /**
    * X redirects back with ?x_error=... when something went wrong. Read it once,
@@ -146,10 +208,28 @@ export default function AllowlistFunnel() {
   if (!connected) {
     return (
       <div className="mx-auto max-w-sm">
-        <LinkButton href={X_LOGIN_PATH} size="lg" className="w-full">
-          <XLogo className="h-4 w-4" />
-          Connect X
-        </LinkButton>
+        <Button
+          onClick={handleConnect}
+          loading={waiting}
+          size="lg"
+          className="w-full"
+        >
+          {!waiting ? <XLogo className="h-4 w-4" /> : null}
+          {waiting ? "Waiting for X" : "Connect X"}
+        </Button>
+
+        {waiting ? (
+          <p className="mt-3 text-center text-xs leading-relaxed text-ink/60">
+            Finish in the other tab and this page will catch up on its own.{" "}
+            <button
+              type="button"
+              onClick={stopWaiting}
+              className="underline underline-offset-4"
+            >
+              Cancel
+            </button>
+          </p>
+        ) : null}
         {connectError ? (
           <p
             role="alert"
