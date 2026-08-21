@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 import { isAdmin } from "@/lib/server/admin";
 import { notConfigured, serverError } from "@/lib/server/respond";
-import { getSessionProfileId } from "@/lib/server/session";
 import { admin, supabaseConfigured } from "@/lib/server/supabase";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +16,7 @@ export async function GET(request: Request) {
   if (!supabaseConfigured) return notConfigured();
 
   try {
-    const profileId = await getSessionProfileId();
-    if (!(await isAdmin(profileId))) {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 

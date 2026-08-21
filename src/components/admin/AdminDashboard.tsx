@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { formatNumber } from "@/lib/dates";
 import SquibHead from "../art/SquibHead";
+import Button from "../ui/Button";
 
 type Row = { day: string; n: number };
 type Entry = { handle: string; address: string; gtd: boolean; at: string };
@@ -67,15 +68,7 @@ export default function AdminDashboard() {
   }
 
   if (state === "denied") {
-    return (
-      <div className="border-2 border-hairline bg-surface p-8 text-center shadow-card">
-        <p className="font-display text-xl font-bold">Not for you</p>
-        <p className="mt-2 text-sm leading-relaxed text-ink/60">
-          This page is limited to admin accounts. Sign in with X on the allowlist
-          page using an account listed in ADMIN_X_IDS.
-        </p>
-      </div>
-    );
+    return <PasswordGate onUnlocked={() => void load()} />;
   }
 
   if (state === "failed" || !stats) {
@@ -218,10 +211,23 @@ export default function AdminDashboard() {
         )}
       </section>
 
-      <p className="text-center text-xs text-ink/40">
-        Times are UTC. The list is capped at the 200 most recent entries; use the
-        SQL editor for the full export before a snapshot.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-hairline pt-5">
+        <p className="text-xs text-ink/40">
+          Times are UTC. The list is capped at the 200 most recent entries; use
+          the SQL editor for the full export before a snapshot.
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            await fetch("/api/admin/login", { method: "DELETE" });
+            setStats(null);
+            setState("denied");
+          }}
+          className="shrink-0 border-2 border-hairline bg-cream px-3 py-1.5 font-display text-[11px] font-semibold uppercase tracking-wide shadow-card transition hover:bg-ink hover:text-cream"
+        >
+          Lock again
+        </button>
+      </div>
     </div>
   );
 }
@@ -300,5 +306,80 @@ function Chart({ title, rows }: { title: string; rows: Row[] }) {
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * The gate. Rendered whenever the stats endpoint says no, which covers both a
+ * missing cookie and an expired one, so a stale session simply asks again.
+ */
+function PasswordGate({ onUnlocked }: { onUnlocked: () => void }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (res.ok) {
+        setPassword("");
+        onUnlocked();
+        return;
+      }
+      setError(
+        res.status === 429
+          ? "Too many attempts. Wait fifteen minutes."
+          : res.status === 503
+            ? "ADMIN_PASSWORD is not set on this deployment."
+            : "That is not the password.",
+      );
+    } catch {
+      setError("Could not reach the server. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mx-auto max-w-sm border-2 border-hairline bg-surface p-6 shadow-lift"
+    >
+      <p className="stamp text-squib-deep">Locked</p>
+      <p className="mt-3 text-sm leading-relaxed text-ink/60">
+        This page lists entrants and their wallet addresses. Password required.
+      </p>
+
+      <label htmlFor="admin-password" className="sr-only">
+        Admin password
+      </label>
+      <input
+        id="admin-password"
+        type="password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="mt-4 w-full border-2 border-hairline bg-cream px-4 py-3 font-mono text-sm outline-none focus:border-squib-deep"
+        placeholder="Password"
+      />
+
+      {error ? (
+        <p role="alert" className="mt-3 text-sm text-flare">
+          {error}
+        </p>
+      ) : null}
+
+      <Button type="submit" loading={busy} size="lg" className="mt-4 w-full">
+        {busy ? "Checking" : "Unlock"}
+      </Button>
+    </form>
   );
 }

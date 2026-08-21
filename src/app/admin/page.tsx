@@ -15,7 +15,7 @@ export default function AdminPage() {
       <PageHeader
         eyebrow="Admin"
         title="The numbers."
-        intro="Everything the site knows, counted. Visible only to accounts listed in ADMIN_X_IDS."
+        intro="Everything the site knows, counted. Password required, because this page lists entrants and their wallet addresses."
       />
       <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
         <AdminDashboard />
