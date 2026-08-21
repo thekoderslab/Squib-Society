@@ -41,6 +41,8 @@ export async function GET() {
       process.env.SESSION_SECRET && process.env.SESSION_SECRET.length >= 16,
     ),
     cronSecret: Boolean(process.env.CRON_SECRET),
+    // Presence only. The value never leaves the server.
+    adminPassword: Boolean(process.env.ADMIN_PASSWORD),
   };
 
   if (!supabaseConfigured) {
