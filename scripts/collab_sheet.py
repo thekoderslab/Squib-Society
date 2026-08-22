@@ -74,23 +74,16 @@ NOTES = [
     "Winner sheet within 24 hours of the giveaway ending",
 ]
 
-# label, value, small caption under the value, highlight
+# label, value, whether the card is filled green
 CARDS = [
-    ("SUPPLY", "369", "fixed, no second batch", True),
-    ("CHAIN", "Robinhood Chain", "EVM, Arbitrum L2", False),
-    ("MINT VENUE", "OpenSea", "never on our site", False),
-    ("MINT DATE", "TBA", "announced on X first", False),
-    ("GTD MINT PRICE", "TBA", "guaranteed spot", False),
-    ("WL MINT PRICE", "TBA", "allowlist spot", False),
+    ("SUPPLY", "369", True),
+    ("CHAIN", "Robinhood Chain", False),
+    ("MINT VENUE", "OpenSea", False),
+    ("MINT DATE", "TBA", False),
+    ("GTD MINT PRICE", "TBA", False),
+    ("WL MINT PRICE", "TBA", False),
 ]
 
-ART = [
-    "0009-mage-squib.png",
-    "0052-fox-squib.png",
-    "0184-lotus-squib.png",
-    "0080-warden-squib.png",
-    "0369-skullknit-squib.png",
-]
 
 # ── the palette, straight off tailwind.config.ts ───────────────────────────
 
@@ -200,10 +193,10 @@ def rule(c, y, weight=2.0):
 
 def section(c, y, label):
     """A solid ink bar with the label knocked out of it. Returns the new y."""
-    h = 20.0
+    h = 22.0
     c.setFillColor(INK)
     c.rect(M, y - h, CW, h, stroke=0, fill=1)
-    stamp(c, M + 9, y - h + 6.8, label, size=8, colour=SURFACE, space=2.0)
+    stamp(c, M + 10, y - h + 7.6, label, size=8.5, colour=SURFACE, space=2.0)
     return y - h
 
 
@@ -288,122 +281,98 @@ def build(path: str) -> None:
     y = y - mark - 22
     rule(c, y, 3.0)
 
-    # ── the art, because a CM wants to see it before reading anything ──────
-    y -= 13
-    tiles, gap = len(ART), 8.0
-    tw = (CW - gap * (tiles - 1)) / tiles
-    th = tw
-    for i, name in enumerate(ART):
-        f = os.path.join(ROOT, "public", "squibs", name)
-        x = M + i * (tw + gap)
-        shadow_box(c, x, y - th, tw, th, SURFACE, offset=3.0, weight=1.4)
-        if os.path.exists(f):
-            pad = 3.0
-            c.drawImage(
-                art(f),
-                x + pad,
-                y - th + pad,
-                width=tw - 2 * pad,
-                height=th - 2 * pad,
-                mask="auto",
-                preserveAspectRatio=True,
-                anchor="c",
-            )
-    y -= th + 20
+    y -= 32
 
     # ── the pitch ─────────────────────────────────────────────────────────
-    c.setFont(DISPLAY, 13.5)
+    c.setFont(DISPLAY, 17)
     c.setFillColor(DEEP)
     c.drawString(M, y, LEAD)
-    lead_w = pdfmetrics.stringWidth(LEAD, DISPLAY, 13.5)
+    lead_w = pdfmetrics.stringWidth(LEAD, DISPLAY, 17)
     c.setFillColor(GREEN)
-    c.rect(M, y - 8.5, lead_w, 3, stroke=0, fill=1)
-    y -= 19
-    y = paragraph(c, M, y, BLURB, BODY, 9.5, 13.2, CW, MUTED)
+    c.rect(M, y - 10.5, lead_w, 3.5, stroke=0, fill=1)
+    y -= 26
+    y = paragraph(c, M, y, BLURB, BODY, 11, 15.0, CW, MUTED)
 
     # ── links ─────────────────────────────────────────────────────────────
-    y -= 8
+    y -= 14
     y = section(c, y, "LINKS")
-    y -= 15
+    y -= 18
     for label, url in LINKS:
-        stamp(c, M + 2, y, label + ":", size=7.5, space=1.2)
-        c.setFont(MONO, 8.5)
+        stamp(c, M + 2, y, label + ":", size=8, space=1.2)
+        c.setFont(MONO, 9.5)
         c.setFillColor(DEEP)
-        c.drawString(M + 56, y, url)
+        c.drawString(M + 62, y, url)
         # A CM reads this on a phone. Make the URLs tappable rather than
         # something they have to retype.
         c.linkURL(
             url,
-            (M + 56, y - 3, M + 56 + pdfmetrics.stringWidth(url, MONO, 8.5), y + 9),
+            (M + 62, y - 4, M + 62 + pdfmetrics.stringWidth(url, MONO, 9.5), y + 10),
             relative=0,
             thickness=0,
         )
-        y -= 14
+        y -= 18
 
     # ── requirements ──────────────────────────────────────────────────────
-    y -= 4
+    y -= 12
     y = section(c, y, "REQUIREMENTS")
-    y -= 20
-    box = 15.0
+    y -= 22
+    box = 17.0
     for i, item in enumerate(REQUIREMENTS, start=1):
         shadow_box(c, M + 2, y - 3, box, box, GREEN, offset=2.0, weight=1.2)
-        c.setFont(MONO_B, 8)
+        c.setFont(MONO_B, 8.5)
         c.setFillColor(INK)
-        c.drawCentredString(M + 2 + box / 2, y + 1.5, "%02d" % i)
-        c.setFont(BODY, 10)
-        c.drawString(M + box + 14, y + 1.5, item)
-        y -= 21
-    c.setFont(BODY, 8.5)
+        c.drawCentredString(M + 2 + box / 2, y + 2.0, "%02d" % i)
+        c.setFont(BODY, 11)
+        c.drawString(M + box + 16, y + 2.0, item)
+        y -= 24
+    c.setFont(BODY, 9.5)
     c.setFillColor(MUTED)
-    c.drawString(M + 2, y + 3, REQUIREMENTS_NOTE)
-    y -= 8
+    c.drawString(M + 2, y + 5, REQUIREMENTS_NOTE)
+    y -= 12
 
     # ── notes for the CM ──────────────────────────────────────────────────
     y = section(c, y, "NOTES FOR CM")
-    y -= 17
+    y -= 20
     for item in NOTES:
         c.setFillColor(INK)
         c.setStrokeColor(INK)
         c.setLineWidth(1.0)
-        c.rect(M + 3, y - 0.5, 5, 5, stroke=1, fill=1)
-        c.setFont(BODY, 9.5)
-        c.drawString(M + 17, y, item)
-        y -= 15.5
+        c.rect(M + 3, y - 0.5, 5.5, 5.5, stroke=1, fill=1)
+        c.setFont(BODY, 10.5)
+        c.drawString(M + 19, y, item)
+        y -= 19
 
     # ── the numbers ───────────────────────────────────────────────────────
-    y -= 4
-    y = section(c, y, "COLLECTION INFO")
     y -= 10
+    y = section(c, y, "COLLECTION INFO")
+    y -= 14
 
     cols, cgap = 3, 9.0
     cw = (CW - cgap * (cols - 1)) / cols
-    ch = 48.0
-    for i, (label, value, caption, highlight) in enumerate(CARDS):
+    ch = 46.0
+    for i, (label, value, highlight) in enumerate(CARDS):
         col, row = i % cols, i // cols
         x = M + col * (cw + cgap)
         top = y - row * (ch + cgap + 3)
         shadow_box(c, x, top - ch, cw, ch, GREEN if highlight else SURFACE)
-        stamp(c, x + 9, top - 15, label, size=6.8, space=1.3, colour=INK if highlight else MUTED)
-        c.setFont(DISPLAY, 15 if len(value) < 12 else 12.5)
+        stamp(c, x + 10, top - 17, label, size=7.4, space=1.3, colour=INK if highlight else MUTED)
+        c.setFont(DISPLAY, 18 if len(value) < 12 else 15)
         c.setFillColor(INK)
-        c.drawString(x + 9, top - 32, value)
-        c.setFont(BODY, 7.5)
-        c.setFillColor(INK if highlight else MUTED)
-        c.drawString(x + 9, top - 42, caption)
+        c.drawString(x + 10, top - 37, value)
 
-    y = y - 2 * (ch + cgap + 3) - 6
+    y = y - 2 * (ch + cgap + 3) - 8
 
     # ── footer ────────────────────────────────────────────────────────────
     rule(c, y, 2.0)
-    y -= 16
-    c.setFont(DISPLAY, 12)
+    y -= 19
+    c.setFont(DISPLAY, 13.5)
     c.setFillColor(INK)
     c.drawString(M, y, DOMAIN)
-    c.setFont(BODY, 9)
+    c.setFont(BODY, 10)
     c.setFillColor(MUTED)
-    c.drawString(M, y - 12, HANDLE)
-    stamp(c, 0, y, "369 SQUIBS", size=8, colour=DEEP, space=2.0, right=W - M)
-    stamp(c, 0, y - 12, "ROBINHOOD CHAIN", size=7.5, colour=MUTED, space=1.8, right=W - M)
+    c.drawString(M, y - 14, HANDLE)
+    stamp(c, 0, y, "369 SQUIBS", size=8.5, colour=DEEP, space=2.0, right=W - M)
+    stamp(c, 0, y - 14, "ROBINHOOD CHAIN", size=8, colour=MUTED, space=1.8, right=W - M)
 
     c.setFillColor(INK)
     c.rect(0, 0, W, 6, stroke=0, fill=1)
