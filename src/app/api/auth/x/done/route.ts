@@ -16,10 +16,9 @@ export const dynamic = "force-dynamic";
  * no nav, no fonts, no React. The script runs while the document is still
  * parsing, so in practice the tab is gone before anything paints.
  *
- * Closing is allowed here because the tab was opened by a script, which stays
- * true even though we opened it with noopener. If a browser refuses anyway, or
- * the popup was blocked and this is the only tab, the timer sends it back to
- * /allowlist and the flow ends exactly where it used to.
+ * Closing is allowed because a script opened this tab. If a browser refuses
+ * anyway, or the popup was blocked so the visitor signed in right here, the
+ * timer sends it to /allowlist and the flow ends where it used to.
  */
 export function GET(request: Request) {
   const params = new URL(request.url).searchParams;
@@ -68,8 +67,11 @@ export function GET(request: Request) {
   try { var c = new BroadcastChannel(${JSON.stringify(AUTH_CHANNEL)}); c.postMessage(msg); } catch (e) {}
   try { localStorage.setItem(${JSON.stringify(AUTH_PING_KEY)}, JSON.stringify({ m: msg, t: Date.now() })); } catch (e) {}
 
-  // A beat so the message lands before this context goes away.
-  setTimeout(function () { try { window.close(); } catch (e) {} }, 120);
+  // Hand focus back to the tab they started from, then get out of the way.
+  setTimeout(function () {
+    try { if (window.opener && !window.opener.closed) window.opener.focus(); } catch (e) {}
+    try { window.close(); } catch (e) {}
+  }, 120);
 
   // Still here means close was refused. Carry on in this tab instead.
   setTimeout(function () { location.replace(${JSON.stringify(back)}); }, 900);

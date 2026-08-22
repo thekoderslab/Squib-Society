@@ -68,6 +68,7 @@ export default function AllowlistFunnel() {
 
   const [connectError, setConnectError] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState(false);
@@ -97,14 +98,24 @@ export default function AllowlistFunnel() {
    * asking /api/me on a timer is enough. Without it the original tab would sit
    * on "Connect X" forever while the other tab is signed in, which is the usual
    * reason new-tab OAuth feels broken.
+   *
+   * No noopener here, and that is deliberate. With it set, window.open always
+   * returns null, whether the tab opened or was blocked, so treating null as
+   * "blocked" navigated this tab to X as well. Two tabs then started two sign
+   * ins, the second overwrote the first one's state cookie, and whichever came
+   * back first was told its link had expired. A handle we can actually test is
+   * worth more here than disowning a tab that only ever visits x.com, and it
+   * lets that tab hand focus back to this one before it closes.
    */
   function handleConnect() {
     setConnectError(null);
+    setBlocked(false);
 
-    const tab = window.open(X_LOGIN_PATH, "_blank", "noopener,noreferrer");
+    const tab = window.open(X_LOGIN_PATH, "_blank");
     if (!tab) {
-      // Popup blocked. Same tab is better than nothing happening at all.
-      window.location.href = X_LOGIN_PATH;
+      // Genuinely blocked. Offer the link rather than yanking this tab away,
+      // which would kill the click that opened it.
+      setBlocked(true);
       return;
     }
 
@@ -146,6 +157,7 @@ export default function AllowlistFunnel() {
       if (poll.current) window.clearInterval(poll.current);
       poll.current = null;
       setWaiting(false);
+      setBlocked(false);
 
       if (msg.error) {
         setConnectError(connectMessage(msg.error));
@@ -292,6 +304,16 @@ export default function AllowlistFunnel() {
             >
               Cancel
             </button>
+          </p>
+        ) : null}
+
+        {blocked ? (
+          <p className="mt-3 border-2 border-hairline bg-cream px-3 py-2 text-center text-xs leading-relaxed text-ink/70">
+            Your browser stopped the new tab from opening.{" "}
+            <a href={X_LOGIN_PATH} className="font-medium underline underline-offset-4">
+              Sign in here instead
+            </a>
+            .
           </p>
         ) : null}
         {connectError ? (
