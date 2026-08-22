@@ -445,10 +445,10 @@ function TaskRow({
   /**
    * Go, wait, verify.
    *
-   * Verify is not offered until the tab has been open a while, because a
-   * button that says Verify the instant you arrive invites people to press it
-   * without doing anything, then wonder why nothing happened. The wait is
-   * honest friction: it is roughly how long the task actually takes.
+   * Verify is not offered the instant the tab opens, because a button sitting
+   * there straight away invites people to press it without doing anything and
+   * then wonder why nothing happened. Long enough to be a beat, short enough
+   * that nobody who did the task is left waiting on us.
    */
   const [went, setWent] = useState(false);
   const [left, setLeft] = useState<number>(TASK_FLOW.goWaitSeconds);

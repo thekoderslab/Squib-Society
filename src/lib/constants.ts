@@ -127,7 +127,7 @@ export const GAME = {
  */
 export const TASK_FLOW = {
   /** How long the Go button waits before it turns into Verify. */
-  goWaitSeconds: 10,
+  goWaitSeconds: 3,
   /** Floor on how long a verification takes, so it reads as work being done. */
   verifyMs: 2000,
 };
