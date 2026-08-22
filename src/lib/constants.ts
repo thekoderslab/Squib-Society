@@ -18,6 +18,24 @@ export const OPENSEA_URL = "https://opensea.io/collection/squib-society"; // pla
 export const PINNED_POST_ID = "2090843215754928485";
 export const PINNED_POST_URL = `https://x.com/${X_HANDLE.slice(1)}/status/${PINNED_POST_ID}`;
 
+/** The domain without the protocol. Reads better in a post; X still links it. */
+export const SITE_DOMAIN = SITE_URL.replace(/^https?:\/\//, "");
+
+/**
+ * Pre-filled quote copy.
+ *
+ * Four variants rather than one, picked at random. Hundreds of accounts posting
+ * a byte-identical string is exactly what X's spam heuristics look for, and a
+ * timeline of the same sentence reads like a bot farm even when it isn't.
+ * Every one is editable: this is a starting point, not a script.
+ */
+export const QUOTE_LINES = [
+  `Just got my spot in ${X_HANDLE}. 369 squibs, every one of them up to something. Get yours at ${SITE_DOMAIN}`,
+  `On the ${X_HANDLE} allowlist. 369 squibs and no two the same. Grab a spot at ${SITE_DOMAIN}`,
+  `Took my spot in ${X_HANDLE}. One of 369, and they are all up to something. ${SITE_DOMAIN}`,
+  `${X_HANDLE} allowlist is open and I am on it. 369 squibs. Get yours: ${SITE_DOMAIN}`,
+];
+
 /**
  * X action intents. These open the actual like or repost dialog rather than
  * dropping someone on the post to find the button themselves, which is the
@@ -27,12 +45,19 @@ export const X_INTENT = {
   follow: `https://x.com/intent/follow?screen_name=${X_HANDLE.slice(1)}`,
   like: `https://x.com/intent/like?tweet_id=${PINNED_POST_ID}`,
   repost: `https://x.com/intent/retweet?tweet_id=${PINNED_POST_ID}`,
-  /** No dedicated quote intent exists. Attaching the post URL makes it one. */
+  /**
+   * No dedicated quote intent exists. Attaching the post URL makes it one.
+   *
+   * The variant is chosen when the module loads, not when the button is
+   * pressed, so one visitor keeps one line. It is never rendered into the DOM
+   * (the button calls window.open with it), so the randomness cannot cause a
+   * hydration mismatch.
+   */
   quote:
     `https://x.com/intent/post?` +
     new URLSearchParams({
       url: `https://x.com/${X_HANDLE.slice(1)}/status/${PINNED_POST_ID}`,
-      text: "369 squibs, and every one of them is up to something.",
+      text: QUOTE_LINES[Math.floor(Math.random() * QUOTE_LINES.length)],
     }).toString(),
 };
 
