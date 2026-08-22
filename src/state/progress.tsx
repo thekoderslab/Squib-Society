@@ -32,6 +32,15 @@ type Ctx = {
   /** False during the first client render. Render neutral placeholders until true. */
   hydrated: boolean;
   /**
+   * False until the first /api/me answer lands, however it lands.
+   *
+   * localStorage hydrates in a tick and knows nothing about the session
+   * cookie, so between `hydrated` and this the app believes a signed in
+   * visitor is a stranger. Anything that branches on being connected has to
+   * wait for this, or it flashes the signed out view at someone who is not.
+   */
+  settled: boolean;
+  /**
    * "server" once Supabase has answered. The ledger is then authoritative and
    * nothing is written to localStorage. "local" is the zero-config fallback.
    */
@@ -66,6 +75,7 @@ function load(): UserProgress {
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<UserProgress>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
+  const [settled, setSettled] = useState(false);
   const [mode, setMode] = useState<"local" | "server">("local");
 
   useEffect(() => {
@@ -85,10 +95,20 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         /* stay in local mode */
+      })
+      .finally(() => {
+        if (live) setSettled(true);
       });
+
+    // A request that never answers must not leave the UI spinning forever.
+    // Well past how long this takes, and being briefly wrong beats being stuck.
+    const giveUp = window.setTimeout(() => {
+      if (live) setSettled(true);
+    }, 6000);
 
     return () => {
       live = false;
+      window.clearTimeout(giveUp);
     };
   }, []);
 
@@ -174,6 +194,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       hydrated,
+      settled,
       mode,
       applyServerProgress,
       progress,
@@ -188,6 +209,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }),
     [
       hydrated,
+      settled,
       mode,
       applyServerProgress,
       progress,

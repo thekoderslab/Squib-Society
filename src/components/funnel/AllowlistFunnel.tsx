@@ -59,6 +59,7 @@ function connectMessage(code: string): string {
 export default function AllowlistFunnel() {
   const {
     hydrated,
+    settled,
     progress,
     applyServerProgress,
     setX,
@@ -70,6 +71,7 @@ export default function AllowlistFunnel() {
 
   const [connectError, setConnectError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [returning, setReturning] = useState(false);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState(false);
@@ -117,6 +119,9 @@ export default function AllowlistFunnel() {
     if (!code && !params.has("connected")) return;
 
     if (code) setConnectError(connectMessage(code));
+    // Coming back from a successful trip to X. Keep the button busy rather
+    // than letting it say Connect X at someone who just did.
+    else setReturning(true);
 
     params.delete("x_error");
     params.delete("connected");
@@ -182,9 +187,20 @@ export default function AllowlistFunnel() {
 
   /* ── Not connected: one button and nothing else ───────────────────────── */
 
-  if (!hydrated) {
+  /**
+   * Hold the button until the server has answered.
+   *
+   * Rendering Connect X the moment localStorage says nothing is stored shows
+   * the signed out view to anyone whose session cookie is about to come back
+   * connected, which after a trip to X is everybody.
+   */
+  if (!hydrated || !settled) {
     return (
-      <div className="mx-auto h-14 w-full max-w-sm animate-pulse border-2 border-hairline bg-surface" />
+      <div className="mx-auto max-w-sm">
+        <Button loading size="lg" className="w-full" disabled>
+          {returning ? "Signing you in" : "One moment"}
+        </Button>
+      </div>
     );
   }
 
