@@ -16,12 +16,13 @@ export const dynamic = "force-dynamic";
  * Where X sends the user back.
  *
  * Verifies state, exchanges the code, reads the profile, and writes the
- * session. Every failure lands back on /allowlist with a code the page can
- * explain, because a blank screen after leaving the site is the worst possible
- * outcome of an auth flow.
+ * session. Success and failure both land on /api/auth/x/done, which hands the
+ * outcome to the tab the visitor started from and then closes this one. The
+ * code always travels, because a blank screen after leaving the site is the
+ * worst possible outcome of an auth flow.
  */
 export async function GET(request: Request) {
-  const back = new URL("/allowlist", request.url);
+  const back = new URL("/api/auth/x/done", request.url);
 
   const fail = (code: string, detail?: unknown) => {
     if (detail) {

@@ -18,7 +18,14 @@ import {
   submitAllowlist,
   verifyTask,
 } from "@/lib/api";
-import { EVM_ADDRESS_RE, HONEYPOT_FIELD, POINTS, TASK_FLOW } from "@/lib/constants";
+import {
+  AUTH_CHANNEL,
+  AUTH_PING_KEY,
+  EVM_ADDRESS_RE,
+  HONEYPOT_FIELD,
+  POINTS,
+  TASK_FLOW,
+} from "@/lib/constants";
 import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Button, { Spinner } from "../ui/Button";
@@ -28,6 +35,24 @@ import SuccessModal from "./SuccessModal";
 import XProfileCard from "./XProfileCard";
 
 const TASKS = getMyTasks();
+
+/** Plain English for every code the callback can hand back. */
+function connectMessage(code: string): string {
+  return (
+    {
+      cancelled: "You cancelled on X. Nothing was saved, try again when ready.",
+      denied: "X declined that sign in. Try again.",
+      rate_limited:
+        "Too many attempts from your network. Give it an hour and try again.",
+      bad_state: "That sign in link expired. Start again from this page.",
+      expired: "That sign in took too long. Start again from this page.",
+      missing_code: "X did not send anything back. Try again.",
+      not_configured: "Setup: this deployment is not connected to a database.",
+      exchange_failed: "Could not finish signing in with X. Try again.",
+      start_failed: "Could not reach X just then. Try again in a moment.",
+    }[code] ?? "Could not sign in with X. Try again."
+  );
+}
 
 export default function AllowlistFunnel() {
   const {
@@ -112,28 +137,67 @@ export default function AllowlistFunnel() {
   }
 
   /**
-   * X redirects back with ?x_error=... when something went wrong. Read it once,
-   * then strip it from the URL so a refresh does not resurrect a stale error.
+   * The sign in tab shouts before it closes, so this one does not have to wait
+   * out the next poll to notice. It also covers someone who signed in from a
+   * different tab entirely, which the poll would never see.
+   */
+  useEffect(() => {
+    async function handle(msg: { ok?: boolean; error?: string | null }) {
+      if (poll.current) window.clearInterval(poll.current);
+      poll.current = null;
+      setWaiting(false);
+
+      if (msg.error) {
+        setConnectError(connectMessage(msg.error));
+        return;
+      }
+      if (!msg.ok) return;
+
+      try {
+        const { progress: server } = await fetchMe();
+        if (server?.x) applyServerProgress(server);
+      } catch {
+        /* a refresh will still show it, the session cookie is already set */
+      }
+    }
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(AUTH_CHANNEL);
+      channel.onmessage = (e) => void handle(e.data ?? {});
+    } catch {
+      channel = null;
+    }
+
+    // Fallback for anything without BroadcastChannel: a storage write fires an
+    // event in every other tab on the origin.
+    function onStorage(e: StorageEvent) {
+      if (e.key !== AUTH_PING_KEY || !e.newValue) return;
+      try {
+        void handle(JSON.parse(e.newValue).m ?? {});
+      } catch {
+        /* someone else wrote the key */
+      }
+    }
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      channel?.close();
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [applyServerProgress]);
+
+  /**
+   * When the sign in tab cannot close itself it lands here instead, carrying
+   * the outcome in the query. Read it once, then strip it so a refresh does not
+   * resurrect a stale error.
    */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("x_error");
-    if (!code) return;
+    if (!code && !params.has("connected")) return;
 
-    setConnectError(
-      {
-        cancelled: "You cancelled on X. Nothing was saved, try again when ready.",
-        denied: "X declined that sign in. Try again.",
-        rate_limited:
-          "Too many attempts from your network. Give it an hour and try again.",
-        bad_state: "That sign in link expired. Start again from this page.",
-        expired: "That sign in took too long. Start again from this page.",
-        missing_code: "X did not send anything back. Try again.",
-        not_configured: "Setup: this deployment is not connected to a database.",
-        exchange_failed: "Could not finish signing in with X. Try again.",
-        start_failed: "Could not reach X just then. Try again in a moment.",
-      }[code] ?? "Could not sign in with X. Try again.",
-    );
+    if (code) setConnectError(connectMessage(code));
 
     params.delete("x_error");
     params.delete("connected");
@@ -220,7 +284,7 @@ export default function AllowlistFunnel() {
 
         {waiting ? (
           <p className="mt-3 text-center text-xs leading-relaxed text-ink/60">
-            Finish in the other tab and this page will catch up on its own.{" "}
+            Finish in the other tab. It closes itself and this page picks up.{" "}
             <button
               type="button"
               onClick={stopWaiting}
