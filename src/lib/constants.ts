@@ -166,16 +166,5 @@ export const DAILY_SPIN = {
   ] as SpinSegment[],
 };
 
-/**
- * How the sign in tab tells the tab you started from that it is done.
- *
- * BroadcastChannel reaches every tab on this origin at once, which is what we
- * want: the visitor may have the site open more than once. The storage key is
- * the fallback for anything without it, since a write fires a storage event in
- * every other tab of the same origin.
- */
-export const AUTH_CHANNEL = "squib-auth";
-export const AUTH_PING_KEY = "squib-society/auth-ping";
-
 /** localStorage key for the mocked user session. Bump the suffix to reset. */
 export const STORAGE_KEY = "squib-society/progress/v2";

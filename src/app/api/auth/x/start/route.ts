@@ -26,10 +26,7 @@ export const dynamic = "force-dynamic";
  * and state is what makes that redirect verifiable rather than forgeable.
  */
 export async function GET(request: Request) {
-  // Every exit goes through /done, which hands the outcome to the tab the
-  // visitor started from and closes this one. Failing straight to /allowlist
-  // would leave them staring at a second copy of the page they came from.
-  const back = new URL("/api/auth/x/done", request.url);
+  const back = new URL("/allowlist", request.url);
 
   if (!supabaseConfigured) {
     back.searchParams.set("x_error", "not_configured");

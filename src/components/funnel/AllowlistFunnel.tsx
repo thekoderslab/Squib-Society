@@ -13,19 +13,11 @@ import {
   ApiError,
   X_LOGIN_PATH,
   disconnectX,
-  fetchMe,
   getMyTasks,
   submitAllowlist,
   verifyTask,
 } from "@/lib/api";
-import {
-  AUTH_CHANNEL,
-  AUTH_PING_KEY,
-  EVM_ADDRESS_RE,
-  HONEYPOT_FIELD,
-  POINTS,
-  TASK_FLOW,
-} from "@/lib/constants";
+import { EVM_ADDRESS_RE, HONEYPOT_FIELD, POINTS, TASK_FLOW } from "@/lib/constants";
 import type { SubmitResult, Task, TaskId, UserProgress } from "@/lib/types";
 import { useProgress } from "@/state/progress";
 import Button, { Spinner } from "../ui/Button";
@@ -35,6 +27,16 @@ import SuccessModal from "./SuccessModal";
 import XProfileCard from "./XProfileCard";
 
 const TASKS = getMyTasks();
+
+/**
+ * How long to wait after the click before leaving for X.
+ *
+ * Setting location inside the click handler unloads the page in the same tick,
+ * so React never paints a frame of the squib burst that click just fired. Long
+ * enough to see it, short enough that it reads as the page responding rather
+ * than hanging.
+ */
+const LEAVE_DELAY_MS = 600;
 
 /** Plain English for every code the callback can hand back. */
 function connectMessage(code: string): string {
@@ -67,8 +69,7 @@ export default function AllowlistFunnel() {
   } = useProgress();
 
   const [connectError, setConnectError] = useState<string | null>(null);
-  const [waiting, setWaiting] = useState(false);
-  const [blocked, setBlocked] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [address, setAddress] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState(false);
@@ -80,129 +81,35 @@ export default function AllowlistFunnel() {
   const addressId = useId();
   const errorId = `${addressId}-error`;
   const honeypotId = `${addressId}-hp`;
-  const poll = useRef<number | null>(null);
+  const leaveTimer = useRef<number | null>(null);
 
   const connected = !!progress.x;
   const alreadyIn = hydrated && progress.allowlisted;
 
   useEffect(() => {
     return () => {
-      if (poll.current) window.clearInterval(poll.current);
+      if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
     };
   }, []);
 
   /**
-   * Sign in happens in a second tab, so this one has to notice when it lands.
+   * Sign in is a plain top level redirect. Leave, approve on X, come back.
    *
-   * The session is a cookie on the same origin, which every tab shares, so
-   * asking /api/me on a timer is enough. Without it the original tab would sit
-   * on "Connect X" forever while the other tab is signed in, which is the usual
-   * reason new-tab OAuth feels broken.
-   *
-   * No noopener here, and that is deliberate. With it set, window.open always
-   * returns null, whether the tab opened or was blocked, so treating null as
-   * "blocked" navigated this tab to X as well. Two tabs then started two sign
-   * ins, the second overwrote the first one's state cookie, and whichever came
-   * back first was told its link had expired. A handle we can actually test is
-   * worth more here than disowning a tab that only ever visits x.com, and it
-   * lets that tab hand focus back to this one before it closes.
+   * It used to open a second tab, which meant two sign ins racing each other
+   * and a spare copy of the site left over at the end. One tab, one flow.
    */
   function handleConnect() {
     setConnectError(null);
-    setBlocked(false);
-
-    const tab = window.open(X_LOGIN_PATH, "_blank");
-    if (!tab) {
-      // Genuinely blocked. Offer the link rather than yanking this tab away,
-      // which would kill the click that opened it.
-      setBlocked(true);
-      return;
-    }
-
-    setWaiting(true);
-    const started = Date.now();
-
-    if (poll.current) window.clearInterval(poll.current);
-    poll.current = window.setInterval(async () => {
-      // Give up after three minutes rather than polling forever.
-      if (Date.now() - started > 3 * 60 * 1000) {
-        stopWaiting();
-        return;
-      }
-      try {
-        const { progress: server } = await fetchMe();
-        if (server?.x) {
-          stopWaiting();
-          applyServerProgress(server);
-        }
-      } catch {
-        /* keep waiting, the other tab may still be mid flow */
-      }
-    }, 2000);
-  }
-
-  function stopWaiting() {
-    if (poll.current) window.clearInterval(poll.current);
-    poll.current = null;
-    setWaiting(false);
+    setLeaving(true);
+    if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => {
+      window.location.href = X_LOGIN_PATH;
+    }, LEAVE_DELAY_MS);
   }
 
   /**
-   * The sign in tab shouts before it closes, so this one does not have to wait
-   * out the next poll to notice. It also covers someone who signed in from a
-   * different tab entirely, which the poll would never see.
-   */
-  useEffect(() => {
-    async function handle(msg: { ok?: boolean; error?: string | null }) {
-      if (poll.current) window.clearInterval(poll.current);
-      poll.current = null;
-      setWaiting(false);
-      setBlocked(false);
-
-      if (msg.error) {
-        setConnectError(connectMessage(msg.error));
-        return;
-      }
-      if (!msg.ok) return;
-
-      try {
-        const { progress: server } = await fetchMe();
-        if (server?.x) applyServerProgress(server);
-      } catch {
-        /* a refresh will still show it, the session cookie is already set */
-      }
-    }
-
-    let channel: BroadcastChannel | null = null;
-    try {
-      channel = new BroadcastChannel(AUTH_CHANNEL);
-      channel.onmessage = (e) => void handle(e.data ?? {});
-    } catch {
-      channel = null;
-    }
-
-    // Fallback for anything without BroadcastChannel: a storage write fires an
-    // event in every other tab on the origin.
-    function onStorage(e: StorageEvent) {
-      if (e.key !== AUTH_PING_KEY || !e.newValue) return;
-      try {
-        void handle(JSON.parse(e.newValue).m ?? {});
-      } catch {
-        /* someone else wrote the key */
-      }
-    }
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      channel?.close();
-      window.removeEventListener("storage", onStorage);
-    };
-  }, [applyServerProgress]);
-
-  /**
-   * When the sign in tab cannot close itself it lands here instead, carrying
-   * the outcome in the query. Read it once, then strip it so a refresh does not
-   * resurrect a stale error.
+   * X sends everyone back here with the outcome in the query. Read it once,
+   * then strip it so a refresh does not resurrect a stale error.
    */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -286,36 +193,14 @@ export default function AllowlistFunnel() {
       <div className="mx-auto max-w-sm">
         <Button
           onClick={handleConnect}
-          loading={waiting}
+          loading={leaving}
           size="lg"
           className="w-full"
         >
-          {!waiting ? <XLogo className="h-4 w-4" /> : null}
-          {waiting ? "Waiting for X" : "Connect X"}
+          {!leaving ? <XLogo className="h-4 w-4" /> : null}
+          {leaving ? "Taking you to X" : "Connect X"}
         </Button>
 
-        {waiting ? (
-          <p className="mt-3 text-center text-xs leading-relaxed text-ink/60">
-            Finish in the other tab. It closes itself and this page picks up.{" "}
-            <button
-              type="button"
-              onClick={stopWaiting}
-              className="underline underline-offset-4"
-            >
-              Cancel
-            </button>
-          </p>
-        ) : null}
-
-        {blocked ? (
-          <p className="mt-3 border-2 border-hairline bg-cream px-3 py-2 text-center text-xs leading-relaxed text-ink/70">
-            Your browser stopped the new tab from opening.{" "}
-            <a href={X_LOGIN_PATH} className="font-medium underline underline-offset-4">
-              Sign in here instead
-            </a>
-            .
-          </p>
-        ) : null}
         {connectError ? (
           <p
             role="alert"
